@@ -4,7 +4,7 @@ export function MaterialsHeader() {
       <p className="text-sm text-muted-foreground">
         Training resources tailored to your development areas
       </p>
-      <h2 className="mt-2 text-3xl font-semibold tracking-tight">Materials</h2>
+      <h2 className="mt-2 text-lg font-semibold tracking-tight">Materials</h2>
     </section>
   );
 }

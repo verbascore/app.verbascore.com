@@ -8,7 +8,7 @@ export function FocusCard({ focusItems }: { focusItems: string[] }) {
           <Target className="size-5" />
         </div>
         <div className="min-w-0">
-          <p className="text-2xl font-semibold tracking-tight">
+          <p className="text-lg font-semibold tracking-tight">
             Focus for Your Next 5 Calls
           </p>
           <div className="mt-4 space-y-3">
@@ -17,9 +17,7 @@ export function FocusCard({ focusItems }: { focusItems: string[] }) {
                 <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-cyan-500/10 text-xs font-semibold text-cyan-300">
                   {index + 1}
                 </div>
-                <p className="text-sm leading-7 text-muted-foreground">
-                  {item}
-                </p>
+                <p className="text-base text-muted-foreground">{item}</p>
               </div>
             ))}
           </div>

@@ -20,9 +20,7 @@ export function DashboardBreakdownCard({
 }) {
   return (
     <section className="self-start min-h-[30rem] rounded-3xl border bg-card/80 p-6 shadow-sm">
-      <p className="text-2xl font-semibold tracking-tight">
-        Criteria Breakdown
-      </p>
+      <p className="text-lg font-semibold tracking-tight">Criteria Breakdown</p>
 
       <div className="mt-8 space-y-6">
         {metricOrder.map((metric) => {
@@ -41,7 +39,7 @@ export function DashboardBreakdownCard({
                   className="h-3 rounded-full bg-muted/80"
                 />
               </div>
-              <p className="w-10 text-right text-xl font-semibold tracking-tight">
+              <p className="w-10 text-right text-base font-semibold tracking-tight">
                 {analytics ? value : "—"}
               </p>
             </div>

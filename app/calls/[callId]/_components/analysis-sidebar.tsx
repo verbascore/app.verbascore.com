@@ -6,7 +6,7 @@ function ScoreRing({ value }: { value: number }) {
   return (
     <div className="flex flex-col items-center justify-center gap-4 rounded-[2rem] border border-emerald-500/20 bg-[radial-gradient(circle_at_top,_rgba(132,204,22,0.18),_transparent_52%),linear-gradient(180deg,rgba(132,204,22,0.10),rgba(132,204,22,0.03))] px-8 py-10">
       <p className="text-sm font-medium text-muted-foreground">Overall Score</p>
-      <div className="flex h-32 w-32 items-center justify-center rounded-full border border-emerald-500/35 bg-emerald-500/10 text-3xl font-semibold tracking-tight text-lime-400 shadow-[inset_0_0_40px_rgba(132,204,22,0.12)]">
+      <div className="flex h-32 w-32 items-center justify-center rounded-full border border-emerald-500/35 bg-emerald-500/10 text-lg font-semibold tracking-tight text-lime-400 shadow-[inset_0_0_40px_rgba(132,204,22,0.12)]">
         {value}
       </div>
     </div>
@@ -36,7 +36,7 @@ export function AnalysisSidebar({ analysis }: { analysis: CallAnalysis }) {
 
       <section className="rounded-[2rem] border border-white/10 bg-card/80 p-7 shadow-[0_20px_60px_rgba(0,0,0,0.18)]">
         <p className="text-base font-semibold tracking-tight">AI Summary</p>
-        <p className="mt-4 text-sm leading-7 text-muted-foreground">
+        <p className="mt-4 text-base text-muted-foreground">
           {analysis.aiSummary}
         </p>
       </section>

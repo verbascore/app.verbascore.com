@@ -29,7 +29,7 @@ export function TranscriptPanel({ transcriptEntries }: TranscriptPanelProps) {
               <p className="text-base font-medium tracking-tight">
                 No transcript entries available
               </p>
-              <p className="mt-3 text-sm leading-7 text-muted-foreground">
+              <p className="mt-3 text-base text-muted-foreground">
                 Analysis finished, but no transcript lines were saved for this
                 call. Try rerunning analysis if you expected the conversation to
                 appear here.
@@ -77,7 +77,7 @@ export function TranscriptPanel({ transcriptEntries }: TranscriptPanelProps) {
                         {formatTimestamp(entry.startTimestampMs)}
                       </span>
                     </div>
-                    <p className="mt-3 text-sm leading-7 text-foreground/95">
+                    <p className="mt-3 text-base text-foreground/95">
                       {entry.text}
                     </p>
                   </div>

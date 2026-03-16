@@ -53,16 +53,16 @@ export default function MaterialDetailPage() {
           ) : null}
         </div>
 
-        <h2 className="mt-5 text-4xl font-semibold tracking-tight">
+        <h2 className="mt-5 text-lg font-semibold tracking-tight">
           {material.title}
         </h2>
-        <p className="mt-4 max-w-3xl text-sm leading-8 text-muted-foreground">
+        <p className="mt-4 max-w-3xl text-base text-muted-foreground">
           {material.description}
         </p>
 
         <div className="mt-8 rounded-3xl border bg-background/50 p-6">
           <p className="text-base font-semibold tracking-tight">Summary</p>
-          <p className="mt-3 text-sm leading-8 text-muted-foreground">
+          <p className="mt-3 text-base text-muted-foreground">
             {material.summary}
           </p>
           <div className="mt-5 flex flex-wrap gap-2">

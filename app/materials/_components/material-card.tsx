@@ -34,10 +34,10 @@ export function MaterialCard({ material, compact = false }: MaterialCardProps) {
         </span>
       </div>
 
-      <p className="mt-5 text-2xl font-semibold tracking-tight transition-colors group-hover:text-primary">
+      <p className="mt-5 text-lg font-semibold tracking-tight transition-colors group-hover:text-primary">
         {material.title}
       </p>
-      <p className="mt-3 text-sm leading-8 text-muted-foreground">
+      <p className="mt-3 text-base text-muted-foreground">
         {compact ? material.summary : material.description}
       </p>
 

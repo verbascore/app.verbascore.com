@@ -52,7 +52,7 @@ export function DashboardQuickAccess() {
     <section className="self-start rounded-3xl border bg-card/80 p-6 shadow-sm min-h-[24rem]">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-2xl font-semibold tracking-tight">Quick Access</p>
+          <p className="text-lg font-semibold tracking-tight">Quick Access</p>
           <p className="mt-2 text-sm text-muted-foreground">
             Jump straight into the workflows and resources you’ll use most.
           </p>
@@ -77,7 +77,7 @@ export function DashboardQuickAccess() {
                   <p className="mt-4 text-lg font-semibold tracking-tight">
                     {card.title}
                   </p>
-                  <p className="mt-2 text-sm leading-7 text-muted-foreground">
+                  <p className="mt-2 text-base text-muted-foreground">
                     {card.description}
                   </p>
                 </div>

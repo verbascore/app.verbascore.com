@@ -41,7 +41,7 @@ export function MetricCards({ snapshot }: { snapshot: AnalyticsSnapshot }) {
                 <p className="text-sm text-muted-foreground">
                   {metricMeta[metric].label}
                 </p>
-                <p className="mt-3 text-3xl font-semibold tracking-tight">
+                <p className="mt-3 text-lg font-semibold tracking-tight">
                   {snapshot.currentMetrics[metric]}
                 </p>
               </div>

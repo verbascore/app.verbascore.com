@@ -8,7 +8,7 @@ import { formatDateTime } from "./utils";
 export function DashboardRecentCalls({ calls }: { calls: DashboardCall[] }) {
   return (
     <section className="self-start min-h-[24rem] rounded-3xl border bg-card/80 p-6 shadow-sm">
-      <p className="text-2xl font-semibold tracking-tight">Recent Calls</p>
+      <p className="text-lg font-semibold tracking-tight">Recent Calls</p>
       <div className="mt-6 space-y-3">
         {calls.length > 0 ? (
           calls.map((call) => (
@@ -37,7 +37,7 @@ export function DashboardRecentCalls({ calls }: { calls: DashboardCall[] }) {
             </Link>
           ))
         ) : (
-          <p className="text-sm leading-7 text-muted-foreground">
+          <p className="text-base text-muted-foreground">
             No calls uploaded yet.
           </p>
         )}

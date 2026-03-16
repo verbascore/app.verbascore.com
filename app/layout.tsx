@@ -14,6 +14,11 @@ export const metadata: Metadata = {
   description:
     "Turn every call into revenue with VerbaScore's automated QA and coaching platform.",
   applicationName: "VerbaScore",
+  icons: {
+    icon: "/verbascore-mark.png",
+    shortcut: "/verbascore-mark.png",
+    apple: "/verbascore-mark.png",
+  },
 };
 
 export default function RootLayout({

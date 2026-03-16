@@ -6,10 +6,10 @@ export function FeedbackEmptyState() {
       <p className="text-sm text-muted-foreground">
         No feedback snapshot has been generated yet.
       </p>
-      <h3 className="mt-3 text-2xl font-semibold tracking-tight">
+      <h3 className="mt-3 text-lg font-semibold tracking-tight">
         Analyze your first sales call to unlock coaching feedback
       </h3>
-      <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
+      <p className="mx-auto mt-3 max-w-2xl text-base text-muted-foreground">
         Feedback snapshots are created automatically after a call analysis
         completes and summarize the most recent analyzed calls with actionable
         coaching advice.

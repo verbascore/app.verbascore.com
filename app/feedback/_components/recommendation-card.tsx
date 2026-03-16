@@ -34,10 +34,10 @@ export function RecommendationCard({
         </span>
       </div>
 
-      <h3 className="mt-4 text-2xl font-semibold tracking-tight">
+      <h3 className="mt-4 text-lg font-semibold tracking-tight">
         {recommendation.title}
       </h3>
-      <p className="mt-3 text-sm leading-8 text-muted-foreground">
+      <p className="mt-3 text-base text-muted-foreground">
         {recommendation.description}
       </p>
 

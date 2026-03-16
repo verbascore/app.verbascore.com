@@ -16,7 +16,7 @@ export function RecommendedMaterials({
 
   return (
     <section className="mt-10">
-      <p className="text-2xl font-semibold tracking-tight">
+      <p className="text-lg font-semibold tracking-tight">
         Recommended for You
       </p>
       <div className="mt-6 grid gap-6 xl:grid-cols-4">

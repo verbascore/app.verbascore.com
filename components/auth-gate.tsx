@@ -21,10 +21,10 @@ export function AuthGate({ children }: { children: ReactNode }) {
                 priority
               />
             </div>
-            <h1 className="mt-5 text-2xl font-semibold tracking-tight">
+            <h1 className="mt-5 text-lg font-semibold tracking-tight">
               Checking your session
             </h1>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            <p className="mt-2 text-base text-muted-foreground">
               Connecting Clerk and Convex before loading your workspace.
             </p>
           </div>
@@ -47,10 +47,10 @@ export function AuthGate({ children }: { children: ReactNode }) {
             <p className="mt-5 text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">
               Secure Access
             </p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight">
+            <h1 className="mt-2 text-lg font-semibold tracking-tight">
               Sign in to access the Verbascore dashboard
             </h1>
-            <p className="mt-3 text-sm leading-6 text-muted-foreground">
+            <p className="mt-3 text-base text-muted-foreground">
               Authenticate with Clerk before entering the revenue command
               center.
             </p>

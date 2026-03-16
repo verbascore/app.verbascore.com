@@ -40,7 +40,7 @@ export function CallOverview({
           <ArrowLeft className="size-4" />
           Back to Calls
         </Link>
-        <h2 className="mt-5 text-4xl font-semibold tracking-tight text-foreground">
+        <h2 className="mt-5 text-lg font-semibold tracking-tight text-foreground">
           {title}
         </h2>
         <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
@@ -50,7 +50,7 @@ export function CallOverview({
           </span>
           <span>Duration: {durationLabel}</span>
         </div>
-        <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">
+        <p className="mt-4 max-w-3xl text-base text-muted-foreground">
           {description || "No description provided for this call."}
         </p>
       </div>

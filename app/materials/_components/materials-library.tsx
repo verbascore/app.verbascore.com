@@ -49,7 +49,7 @@ export function MaterialsLibrary({
 
   return (
     <section className="mt-10">
-      <p className="text-2xl font-semibold tracking-tight">Full Library</p>
+      <p className="text-lg font-semibold tracking-tight">Full Library</p>
 
       <div className="mt-6 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div className="relative w-full max-w-[460px]">

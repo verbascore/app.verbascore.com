@@ -42,10 +42,10 @@ export function NotificationCard({
         </div>
 
         <div className="min-w-0 flex-1">
-          <h3 className="text-xl font-semibold tracking-tight">
+          <h3 className="text-lg font-semibold tracking-tight">
             {notification.title}
           </h3>
-          <p className="mt-2 text-sm leading-7 text-muted-foreground">
+          <p className="mt-2 text-base text-muted-foreground">
             {notification.message}
           </p>
 

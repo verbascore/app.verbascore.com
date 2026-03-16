@@ -28,7 +28,7 @@ export function DashboardTrendCard({
 }) {
   return (
     <section className="self-start min-h-[30rem] rounded-3xl border bg-card/80 p-6 shadow-sm">
-      <p className="text-2xl font-semibold tracking-tight">
+      <p className="text-lg font-semibold tracking-tight">
         Score Trend (30 Days)
       </p>
       <p className="mt-2 text-sm text-muted-foreground">

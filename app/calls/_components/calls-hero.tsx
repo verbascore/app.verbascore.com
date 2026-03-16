@@ -5,10 +5,10 @@ export function CallsHero() {
         Upload dual-channel MP3s, trigger AI analysis, and review each call in
         its own dashboard.
       </p>
-      <h2 className="mt-2 text-3xl font-semibold tracking-tight">
+      <h2 className="mt-2 text-lg font-semibold tracking-tight">
         Sales call library
       </h2>
-      <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+      <p className="mt-3 max-w-2xl text-base text-muted-foreground">
         Use the table below to open any call, monitor processing, rerun analysis
         when needed, or remove records you no longer want to keep.
       </p>

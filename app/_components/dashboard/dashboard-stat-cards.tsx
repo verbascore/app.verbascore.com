@@ -76,7 +76,7 @@ export function DashboardStatCards({
               <div>
                 <p className="text-sm text-muted-foreground">{card.label}</p>
                 <div className="mt-4 flex items-end gap-3">
-                  <p className="text-5xl font-semibold tracking-tight">
+                  <p className="text-lg font-semibold tracking-tight">
                     {card.value}
                   </p>
                 </div>

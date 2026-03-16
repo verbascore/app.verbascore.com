@@ -35,7 +35,7 @@ export function CallCreateForm({
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
             New Call
           </p>
-          <h3 className="mt-2 text-xl font-semibold tracking-tight">
+          <h3 className="mt-2 text-lg font-semibold tracking-tight">
             Create a call record
           </h3>
         </div>

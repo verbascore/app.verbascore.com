@@ -4,7 +4,7 @@ export function FeedbackHeader() {
       <p className="text-sm text-muted-foreground">
         AI-generated insights and action items for improvement
       </p>
-      <h2 className="mt-2 text-3xl font-semibold tracking-tight">Feedback</h2>
+      <h2 className="mt-2 text-lg font-semibold tracking-tight">Feedback</h2>
     </section>
   );
 }

@@ -40,7 +40,7 @@ export function CallsTable({
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
             Library
           </p>
-          <h3 className="mt-2 text-xl font-semibold tracking-tight">
+          <h3 className="mt-2 text-lg font-semibold tracking-tight">
             All recorded calls
           </h3>
         </div>

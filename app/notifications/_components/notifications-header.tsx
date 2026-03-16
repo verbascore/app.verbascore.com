@@ -20,7 +20,7 @@ export function NotificationsHeader({
 
   return (
     <section>
-      <h2 className="text-3xl font-semibold tracking-tight">Notifications</h2>
+      <h2 className="text-lg font-semibold tracking-tight">Notifications</h2>
       <p className="mt-2 text-sm text-muted-foreground">
         Stay updated on your performance alerts
       </p>

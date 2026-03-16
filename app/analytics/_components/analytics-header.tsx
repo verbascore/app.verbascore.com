@@ -28,7 +28,7 @@ export function AnalyticsHeader({
           <p className="text-sm text-muted-foreground">
             Deep dive into your performance metrics
           </p>
-          <h2 className="mt-2 text-3xl font-semibold tracking-tight">
+          <h2 className="mt-2 text-lg font-semibold tracking-tight">
             Analytics
           </h2>
         </div>
