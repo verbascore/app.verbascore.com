@@ -2,7 +2,13 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { Loader2, PlayCircle, Plus, Sparkles } from "lucide-react";
+import {
+  Loader2,
+  PlayCircle,
+  Plus,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
 
 import { api } from "@/convex/_generated/api";
 import { AppShell } from "@/components/app-shell";
@@ -40,10 +46,12 @@ export default function CallsPage() {
   const generateUploadUrl = useMutation(api.calls.generateUploadUrl);
   const createCall = useMutation(api.calls.createCall);
   const startAnalysis = useMutation(api.calls.startAnalysis);
+  const deleteCall = useMutation(api.calls.deleteCall);
 
   const [isCreating, setIsCreating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [analysisCallId, setAnalysisCallId] = useState<string | null>(null);
+  const [deletingCallId, setDeletingCallId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [sellerFile, setSellerFile] = useState<File | null>(null);
@@ -110,6 +118,30 @@ export default function CallsPage() {
       );
     } finally {
       setAnalysisCallId(null);
+    }
+  }
+
+  async function handleDeleteCall(callId: string, callTitle: string) {
+    const confirmed = window.confirm(
+      `Delete "${callTitle}"? This will permanently remove the call, audio files, and any analysis data.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDeletingCallId(callId);
+      setError(null);
+      await deleteCall({ callId: callId as never });
+    } catch (deleteError) {
+      setError(
+        deleteError instanceof Error
+          ? deleteError.message
+          : "Failed to delete the call.",
+      );
+    } finally {
+      setDeletingCallId(null);
     }
   }
 
@@ -247,11 +279,18 @@ export default function CallsPage() {
             </p>
           </div>
         ) : (
-          calls.map((call) => (
-            <article
-              key={call._id}
-              className="rounded-3xl border bg-card p-6 shadow-sm"
-            >
+          calls.map((call) => {
+            const isAnalysisRunning =
+              !!call.pendingAnalysis &&
+              call.pendingAnalysis.status !== "failed" &&
+              call.pendingAnalysis.status !== "completed";
+            const isDeleting = deletingCallId === call._id;
+
+            return (
+              <article
+                key={call._id}
+                className="rounded-3xl border bg-card p-6 shadow-sm"
+              >
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
                   <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
@@ -265,39 +304,60 @@ export default function CallsPage() {
                   </p>
                 </div>
 
-                {call.analysis ? null : call.pendingAnalysis &&
-                  call.pendingAnalysis.status !== "failed" ? (
-                  <div className="min-w-56 rounded-2xl border bg-background/70 p-4">
-                    <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                      Analysis in progress
-                    </p>
-                    <p className="mt-2 text-2xl font-semibold">
-                      {call.pendingAnalysis.progress}%
-                    </p>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      {call.pendingAnalysis.currentStep}
-                    </p>
-                    <div className="mt-4 h-2 overflow-hidden rounded-full bg-border">
-                      <div
-                        className="h-full rounded-full bg-primary transition-all"
-                        style={{ width: `${call.pendingAnalysis.progress}%` }}
-                      />
+                <div className="flex flex-col items-stretch gap-3 md:items-end">
+                  {call.analysis ? null : call.pendingAnalysis &&
+                    call.pendingAnalysis.status !== "failed" ? (
+                    <div className="min-w-56 rounded-2xl border bg-background/70 p-4">
+                      <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                        Analysis in progress
+                      </p>
+                      <p className="mt-2 text-2xl font-semibold">
+                        {call.pendingAnalysis.progress}%
+                      </p>
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        {call.pendingAnalysis.currentStep}
+                      </p>
+                      <div className="mt-4 h-2 overflow-hidden rounded-full bg-border">
+                        <div
+                          className="h-full rounded-full bg-primary transition-all"
+                          style={{ width: `${call.pendingAnalysis.progress}%` }}
+                        />
+                      </div>
                     </div>
-                  </div>
-                ) : (
+                  ) : (
+                    <button
+                      onClick={() => handleStartAnalysis(call._id)}
+                      disabled={analysisCallId === call._id}
+                      className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {analysisCallId === call._id ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <Sparkles className="size-4" />
+                      )}
+                      Start analysis
+                    </button>
+                  )}
+
                   <button
-                    onClick={() => handleStartAnalysis(call._id)}
-                    disabled={analysisCallId === call._id}
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                    type="button"
+                    onClick={() => handleDeleteCall(call._id, call.title)}
+                    disabled={isDeleting || isAnalysisRunning}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-destructive/30 px-4 text-sm font-medium text-destructive transition-colors hover:bg-destructive/5 disabled:cursor-not-allowed disabled:opacity-50"
+                    title={
+                      isAnalysisRunning
+                        ? "Wait for analysis to finish before deleting this call."
+                        : undefined
+                    }
                   >
-                    {analysisCallId === call._id ? (
+                    {isDeleting ? (
                       <Loader2 className="size-4 animate-spin" />
                     ) : (
-                      <Sparkles className="size-4" />
+                      <Trash2 className="size-4" />
                     )}
-                    Start analysis
+                    Delete call
                   </button>
-                )}
+                </div>
               </div>
 
               <div className="mt-6 grid gap-4 md:grid-cols-2">
@@ -399,8 +459,9 @@ export default function CallsPage() {
                   </div>
                 </div>
               ) : null}
-            </article>
-          ))
+              </article>
+            );
+          })
         )}
       </section>
     </AppShell>

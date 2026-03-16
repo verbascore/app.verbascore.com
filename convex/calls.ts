@@ -205,6 +205,61 @@ export const startAnalysis = mutation({
   },
 });
 
+export const deleteCall = mutation({
+  args: {
+    callId: v.id("calls"),
+  },
+  handler: async (ctx, args) => {
+    const identity = await requireIdentity(ctx);
+    const call = await ctx.db.get(args.callId);
+
+    if (!call || call.ownerUserId !== identity.subject) {
+      throw new ConvexError("Call not found");
+    }
+
+    const pendingAnalysis = await ctx.db
+      .query("pending_analysis")
+      .withIndex("by_call", (q) => q.eq("callId", args.callId))
+      .first();
+
+    if (
+      pendingAnalysis &&
+      (pendingAnalysis.status === "queued" ||
+        pendingAnalysis.status === "processing")
+    ) {
+      throw new ConvexError("You can't delete a call while analysis is running");
+    }
+
+    const analysis = await ctx.db
+      .query("callAnalyses")
+      .withIndex("by_call", (q) => q.eq("callId", args.callId))
+      .first();
+
+    if (analysis) {
+      const transcriptEntries = await ctx.db
+        .query("callTranscriptEntries")
+        .withIndex("by_analysis", (q) => q.eq("callAnalysisId", analysis._id))
+        .collect();
+
+      await Promise.all(
+        transcriptEntries.map((entry) => ctx.db.delete(entry._id)),
+      );
+      await ctx.db.delete(analysis._id);
+    }
+
+    if (pendingAnalysis) {
+      await ctx.db.delete(pendingAnalysis._id);
+    }
+
+    await Promise.all([
+      ctx.storage.delete(call.sellerAudioStorageId),
+      ctx.storage.delete(call.clientAudioStorageId),
+    ]);
+
+    await ctx.db.delete(call._id);
+  },
+});
+
 export const getCallForProcessing = internalQuery({
   args: {
     callId: v.id("calls"),
