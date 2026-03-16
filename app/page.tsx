@@ -69,21 +69,13 @@ export default function Page() {
               href="#dashboard"
               className="flex items-center gap-3 rounded-xl px-2 py-1.5 transition-colors hover:bg-sidebar-accent"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-black/5">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sidebar-accent/70 shadow-sm ring-1 ring-black/5 dark:ring-white/10">
                 <Image
-                  src="/verbascore-logo-dark.png"
+                  src="/verbascore-mark.png"
                   alt="Verbascore"
-                  width={112}
-                  height={28}
-                  className="h-7 w-auto object-contain dark:hidden"
-                  priority
-                />
-                <Image
-                  src="/verbascore-logo-white.png"
-                  alt="Verbascore"
-                  width={112}
-                  height={28}
-                  className="hidden h-7 w-auto object-contain dark:block"
+                  width={40}
+                  height={40}
+                  className="h-7 w-7 object-contain"
                   priority
                 />
               </div>
