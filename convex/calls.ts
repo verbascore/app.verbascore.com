@@ -423,6 +423,26 @@ export const completeAnalysis = internalMutation({
       updatedAt: now,
     });
 
+    const callRecord = await ctx.db.get(args.callId);
+
+    if (callRecord) {
+      await ctx.runMutation(internal.notifications.createNotification, {
+        ownerUserId: callRecord.ownerUserId,
+        level: args.overallRating < 60 ? "critical" : "info",
+        title:
+          args.overallRating < 60
+            ? "Critical Alert: Review This Call"
+            : "Call Analysis Ready",
+        message:
+          args.overallRating < 60
+            ? `${callRecord.title} scored ${args.overallRating}. The call dashboard is ready with urgent coaching signals to review.`
+            : `${callRecord.title} finished processing and its call dashboard is ready to review.`,
+        href: `/calls/${args.callId}`,
+        sourceType: "call_analysis",
+        sourceCallId: args.callId,
+      });
+    }
+
     await ctx.scheduler.runAfter(0, internal.analytics.generateSnapshot, {
       callId: args.callId,
     });

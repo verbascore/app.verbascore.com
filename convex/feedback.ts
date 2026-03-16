@@ -1,6 +1,7 @@
 import { ConvexError, v } from "convex/values";
 
 import { Doc } from "./_generated/dataModel";
+import { internal } from "./_generated/api";
 import { internalMutation, query } from "./_generated/server";
 
 async function requireIdentity(ctx: {
@@ -150,7 +151,7 @@ export const generateSnapshot = internalMutation({
         transcriptEntries,
       });
 
-      if (analyzedCalls.length === 3) {
+      if (analyzedCalls.length === 10) {
         break;
       }
     }
@@ -294,7 +295,7 @@ export const generateSnapshot = internalMutation({
 
     const now = Date.now();
 
-    return await ctx.db.insert("feedback", {
+    const snapshotId = await ctx.db.insert("feedback", {
       ownerUserId,
       latestCallId: latest.call._id,
       latestCallTitle: latest.call.title,
@@ -305,5 +306,23 @@ export const generateSnapshot = internalMutation({
       createdAt: now,
       updatedAt: now,
     });
+
+    await ctx.runMutation(internal.notifications.createNotification, {
+      ownerUserId,
+      level: recommendations.some((item) => item.priority === "high")
+        ? "warning"
+        : "info",
+      title: recommendations.some((item) => item.priority === "high")
+        ? "Feedback Alert: High-Priority Coaching Added"
+        : "Feedback Snapshot Ready",
+      message: recommendations.some((item) => item.priority === "high")
+        ? `New coaching feedback was generated and includes ${recommendations.filter((item) => item.priority === "high").length} high-priority recommendation(s).`
+        : "A new feedback snapshot is ready with action items for your next calls.",
+      href: "/feedback",
+      sourceType: "feedback",
+      sourceCallId: latest.call._id,
+    });
+
+    return snapshotId;
   },
 });

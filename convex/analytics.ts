@@ -1,6 +1,7 @@
 import { ConvexError, v } from "convex/values";
 
 import { Doc } from "./_generated/dataModel";
+import { internal } from "./_generated/api";
 import { internalMutation, query } from "./_generated/server";
 
 async function requireIdentity(ctx: {
@@ -139,7 +140,7 @@ export const generateSnapshot = internalMutation({
         transcriptEntries,
       });
 
-      if (analyzedCalls.length === 3) {
+      if (analyzedCalls.length === 10) {
         break;
       }
     }
@@ -201,7 +202,7 @@ export const generateSnapshot = internalMutation({
 
     const now = Date.now();
 
-    return await ctx.db.insert("analytics", {
+    const snapshotId = await ctx.db.insert("analytics", {
       ownerUserId,
       latestCallId: latest.call._id,
       latestCallTitle: latest.call.title,
@@ -242,5 +243,26 @@ export const generateSnapshot = internalMutation({
       createdAt: now,
       updatedAt: now,
     });
+
+    await ctx.runMutation(internal.notifications.createNotification, {
+      ownerUserId,
+      level:
+        latest.analysis.callToAction < 70 || latest.analysis.introduction < 70
+          ? "warning"
+          : "info",
+      title:
+        latest.analysis.callToAction < 70
+          ? "Analytics Alert: CTA Score Below Threshold"
+          : "Analytics Snapshot Ready",
+      message:
+        latest.analysis.callToAction < 70
+          ? `Your latest analytics snapshot shows a call-to-action score of ${latest.analysis.callToAction}. Review the trend and closing guidance.`
+          : `A new analytics snapshot was generated from up to ${newestFirst.length} recent analyzed calls.`,
+      href: "/analytics",
+      sourceType: "analytics",
+      sourceCallId: latest.call._id,
+    });
+
+    return snapshotId;
   },
 });

@@ -140,4 +140,28 @@ export default defineSchema({
   })
     .index("by_owner_created_at", ["ownerUserId", "createdAt"])
     .index("by_owner_updated_at", ["ownerUserId", "updatedAt"]),
+
+  notifications: defineTable({
+    ownerUserId: v.string(),
+    level: v.union(
+      v.literal("critical"),
+      v.literal("warning"),
+      v.literal("info"),
+    ),
+    title: v.string(),
+    message: v.string(),
+    href: v.optional(v.string()),
+    sourceType: v.union(
+      v.literal("call_analysis"),
+      v.literal("analytics"),
+      v.literal("feedback"),
+    ),
+    sourceCallId: v.optional(v.id("calls")),
+    isBookmarked: v.boolean(),
+    snoozedUntil: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_owner_created_at", ["ownerUserId", "createdAt"])
+    .index("by_owner_level", ["ownerUserId", "level"]),
 });

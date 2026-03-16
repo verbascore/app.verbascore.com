@@ -13,6 +13,7 @@ import type * as callAnalysis from "../callAnalysis.js";
 import type * as calls from "../calls.js";
 import type * as dashboard from "../dashboard.js";
 import type * as feedback from "../feedback.js";
+import type * as notifications from "../notifications.js";
 
 import type {
   ApiFromModules,
@@ -26,6 +27,7 @@ declare const fullApi: ApiFromModules<{
   calls: typeof calls;
   dashboard: typeof dashboard;
   feedback: typeof feedback;
+  notifications: typeof notifications;
 }>;
 
 /**

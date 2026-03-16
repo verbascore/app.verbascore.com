@@ -11,7 +11,7 @@ export function AnalyticsEmptyState() {
       </h3>
       <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
         Snapshots are created automatically after a call analysis completes.
-        They summarize up to the three most recently analyzed calls, with the
+        They summarize up to the 10 most recently analyzed calls, with the
         newest one weighted first.
       </p>
       <Link

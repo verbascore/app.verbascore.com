@@ -53,7 +53,7 @@ const navigationItems = [
   },
   {
     title: "Notifications",
-    href: "#",
+    href: "/notifications",
     icon: Bell,
   },
   {
