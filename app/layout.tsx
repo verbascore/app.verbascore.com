@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 
+import { AuthGate } from "@/components/auth-gate";
 import ConvexClientProvider from "@/components/convex-client-provider";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -25,7 +26,9 @@ export default function RootLayout({
       <body className="antialiased">
         <ClerkProvider>
           <ConvexClientProvider>
-            <ThemeProvider>{children}</ThemeProvider>
+            <AuthGate>
+              <ThemeProvider>{children}</ThemeProvider>
+            </AuthGate>
           </ConvexClientProvider>
         </ClerkProvider>
       </body>
