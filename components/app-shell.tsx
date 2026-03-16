@@ -58,7 +58,7 @@ const navigationItems = [
   },
   {
     title: "Materials",
-    href: "#",
+    href: "/materials",
     icon: Library,
   },
 ] as const;

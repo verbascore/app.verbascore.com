@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { BookOpen } from "lucide-react";
 
+import { getMaterialByTitle } from "@/lib/materials";
+
 import { FeedbackRecommendation } from "./types";
 import { formatStatus, priorityClasses, statusClasses } from "./utils";
 
@@ -11,6 +13,8 @@ export function RecommendationCard({
 }: {
   recommendation: FeedbackRecommendation;
 }) {
+  const material = getMaterialByTitle(recommendation.resourceTitle);
+
   return (
     <article className="rounded-3xl border bg-card/80 p-6 shadow-sm">
       <div className="flex flex-wrap gap-2">
@@ -37,24 +41,17 @@ export function RecommendationCard({
         {recommendation.description}
       </p>
 
-      <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
-        <div className="flex flex-wrap items-center gap-2">
-          <span>Linked calls:</span>
-          {recommendation.linkedCallIds.map((callId, index) => (
-            <Link
-              key={callId}
-              href={`/calls/${callId}`}
-              className="text-cyan-300 transition-colors hover:text-cyan-200"
-            >
-              c{index + 1}
-            </Link>
-          ))}
+      {material ? (
+        <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+          <Link
+            href={`/materials/${material.slug}`}
+            className="inline-flex items-center gap-2 text-cyan-300 transition-colors hover:text-cyan-200"
+          >
+            <BookOpen className="size-4" />
+            {material.title}
+          </Link>
         </div>
-        <div className="flex items-center gap-2">
-          <BookOpen className="size-4" />
-          <span className="text-cyan-300">{recommendation.resourceTitle}</span>
-        </div>
-      </div>
+      ) : null}
     </article>
   );
 }
