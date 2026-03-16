@@ -57,4 +57,55 @@ export default defineSchema({
   })
     .index("by_analysis", ["callAnalysisId"])
     .index("by_analysis_start_time", ["callAnalysisId", "startTimestampMs"]),
+
+  analytics: defineTable({
+    ownerUserId: v.string(),
+    latestCallId: v.id("calls"),
+    latestCallTitle: v.string(),
+    sourceCallIds: v.array(v.id("calls")),
+    sourceCallTitles: v.array(v.string()),
+    trendPoints: v.array(
+      v.object({
+        label: v.string(),
+        createdAt: v.number(),
+        callId: v.id("calls"),
+        callTitle: v.string(),
+        overallRating: v.number(),
+        closeRate: v.number(),
+        quickness: v.number(),
+        introduction: v.number(),
+        knowledge: v.number(),
+        hospitality: v.number(),
+        callToAction: v.number(),
+      }),
+    ),
+    currentMetrics: v.object({
+      overallRating: v.number(),
+      closeRate: v.number(),
+      quickness: v.number(),
+      introduction: v.number(),
+      knowledge: v.number(),
+      hospitality: v.number(),
+      callToAction: v.number(),
+    }),
+    metricDeltas: v.object({
+      overallRating: v.number(),
+      closeRate: v.number(),
+      quickness: v.number(),
+      introduction: v.number(),
+      knowledge: v.number(),
+      hospitality: v.number(),
+      callToAction: v.number(),
+    }),
+    topObjections: v.array(
+      v.object({
+        label: v.string(),
+        count: v.number(),
+      }),
+    ),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_owner_created_at", ["ownerUserId", "createdAt"])
+    .index("by_owner_updated_at", ["ownerUserId", "updatedAt"]),
 });

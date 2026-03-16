@@ -227,7 +227,9 @@ export const deleteCall = mutation({
       (pendingAnalysis.status === "queued" ||
         pendingAnalysis.status === "processing")
     ) {
-      throw new ConvexError("You can't delete a call while analysis is running");
+      throw new ConvexError(
+        "You can't delete a call while analysis is running",
+      );
     }
 
     const analysis = await ctx.db
@@ -419,6 +421,10 @@ export const completeAnalysis = internalMutation({
       currentStep: "Analysis completed",
       errorMessage: undefined,
       updatedAt: now,
+    });
+
+    await ctx.scheduler.runAfter(0, internal.analytics.generateSnapshot, {
+      callId: args.callId,
     });
 
     return callAnalysisId;

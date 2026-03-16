@@ -43,7 +43,7 @@ const navigationItems = [
   },
   {
     title: "Analytics",
-    href: "#",
+    href: "/analytics",
     icon: BarChart3,
   },
   {
