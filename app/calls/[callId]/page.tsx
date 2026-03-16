@@ -84,7 +84,7 @@ function ScoreRing({ value }: { value: number }) {
   return (
     <div className="flex flex-col items-center justify-center gap-4 rounded-[2rem] border border-emerald-500/20 bg-[radial-gradient(circle_at_top,_rgba(132,204,22,0.18),_transparent_52%),linear-gradient(180deg,rgba(132,204,22,0.10),rgba(132,204,22,0.03))] px-8 py-10">
       <p className="text-sm font-medium text-muted-foreground">Overall Score</p>
-      <div className="flex h-32 w-32 items-center justify-center rounded-full border border-emerald-500/35 bg-emerald-500/10 text-5xl font-semibold tracking-tight text-lime-400 shadow-[inset_0_0_40px_rgba(132,204,22,0.12)]">
+      <div className="flex h-32 w-32 items-center justify-center rounded-full border border-emerald-500/35 bg-emerald-500/10 text-3xl font-semibold tracking-tight text-lime-400 shadow-[inset_0_0_40px_rgba(132,204,22,0.12)]">
         {value}
       </div>
     </div>
@@ -98,7 +98,7 @@ function MetricRow({ label, value }: { label: string; value: number }) {
       <div className="rounded-full bg-muted/70 p-1">
         <Progress value={value} className="h-3 rounded-full bg-muted/80" />
       </div>
-      <p className="w-11 text-right text-xl font-semibold tracking-tight text-lime-400">
+      <p className="w-11 text-right text-base font-semibold tracking-tight text-lime-400">
         {value}
       </p>
     </div>
@@ -124,7 +124,7 @@ function DashboardSkeleton({
         <section className="rounded-[2rem] border border-white/10 bg-card/80 p-7 shadow-[0_20px_60px_rgba(0,0,0,0.18)] self-start">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-3xl font-semibold tracking-tight">
+              <p className="text-base font-semibold tracking-tight">
                 Transcript
               </p>
               <p className="mt-2 text-sm text-muted-foreground">
@@ -169,7 +169,7 @@ function DashboardSkeleton({
               <p className="text-sm font-medium uppercase tracking-[0.18em] text-muted-foreground">
                 Analysis status
               </p>
-              <p className="text-2xl font-semibold tracking-tight">{title}</p>
+              <p className="text-base font-semibold tracking-tight">{title}</p>
               <p className="text-sm leading-6 text-muted-foreground">
                 {description ||
                   "We are still transcribing and scoring the conversation."}
@@ -483,7 +483,7 @@ export default function CallDetailsPage() {
               <section className="min-h-[20rem] max-h-[54rem] self-start overflow-hidden rounded-[2rem] border border-white/10 bg-card/80 p-7 shadow-[0_20px_60px_rgba(0,0,0,0.18)] self-start">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-3xl font-semibold tracking-tight">
+                    <p className="text-base font-semibold tracking-tight">
                       Transcript
                     </p>
                     <p className="mt-2 text-sm text-muted-foreground">
@@ -499,7 +499,7 @@ export default function CallDetailsPage() {
                   <ScrollArea className="mt-6 pr-4">
                     <div className="flex items-start justify-center rounded-[1.6rem] border border-dashed border-white/10 bg-background/30 px-6 py-10 text-center self-start">
                       <div className="max-w-md self-start">
-                        <p className="text-lg font-medium tracking-tight">
+                        <p className="text-base font-medium tracking-tight">
                           No transcript entries available
                         </p>
                         <p className="mt-3 text-sm leading-7 text-muted-foreground">
@@ -538,7 +538,7 @@ export default function CallDetailsPage() {
                             </div>
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-wrap items-center gap-3">
-                                <p className="text-2xl font-medium tracking-tight">
+                                <p className="text-base font-medium tracking-tight">
                                   {getSpeakerLabel(entry.channel)}
                                 </p>
                                 {entry.isObjection ? (
@@ -550,7 +550,7 @@ export default function CallDetailsPage() {
                                   {formatTimestamp(entry.startTimestampMs)}
                                 </span>
                               </div>
-                              <p className="mt-3 text-[1.05rem] leading-8 text-foreground/95">
+                              <p className="text-sm leading-7 text-foreground/95">
                                 {entry.text}
                               </p>
                             </div>
@@ -568,7 +568,7 @@ export default function CallDetailsPage() {
                 </section>
 
                 <section className="rounded-[2rem] border border-white/10 bg-card/80 p-7 shadow-[0_20px_60px_rgba(0,0,0,0.18)]">
-                  <p className="text-2xl font-semibold tracking-tight">
+                  <p className="text-base font-semibold tracking-tight">
                     AI Summary
                   </p>
                   <p className="mt-4 text-sm leading-7 text-muted-foreground">
@@ -577,7 +577,7 @@ export default function CallDetailsPage() {
                 </section>
 
                 <section className="rounded-[2rem] border border-white/10 bg-card/80 p-7 shadow-[0_20px_60px_rgba(0,0,0,0.18)]">
-                  <p className="text-2xl font-semibold tracking-tight">
+                  <p className="text-base font-semibold tracking-tight">
                     Criteria Breakdown
                   </p>
                   <div className="mt-6 space-y-5">
