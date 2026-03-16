@@ -108,4 +108,36 @@ export default defineSchema({
   })
     .index("by_owner_created_at", ["ownerUserId", "createdAt"])
     .index("by_owner_updated_at", ["ownerUserId", "updatedAt"]),
+
+  feedback: defineTable({
+    ownerUserId: v.string(),
+    latestCallId: v.id("calls"),
+    latestCallTitle: v.string(),
+    sourceCallIds: v.array(v.id("calls")),
+    sourceCallTitles: v.array(v.string()),
+    focusItems: v.array(v.string()),
+    recommendations: v.array(
+      v.object({
+        priority: v.union(
+          v.literal("high"),
+          v.literal("medium"),
+          v.literal("low"),
+        ),
+        status: v.union(
+          v.literal("new"),
+          v.literal("in_progress"),
+          v.literal("watch"),
+        ),
+        title: v.string(),
+        description: v.string(),
+        linkedCallIds: v.array(v.id("calls")),
+        linkedCallTitles: v.array(v.string()),
+        resourceTitle: v.string(),
+      }),
+    ),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_owner_created_at", ["ownerUserId", "createdAt"])
+    .index("by_owner_updated_at", ["ownerUserId", "updatedAt"]),
 });

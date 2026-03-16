@@ -11,6 +11,7 @@
 import type * as analytics from "../analytics.js";
 import type * as callAnalysis from "../callAnalysis.js";
 import type * as calls from "../calls.js";
+import type * as feedback from "../feedback.js";
 
 import type {
   ApiFromModules,
@@ -22,6 +23,7 @@ declare const fullApi: ApiFromModules<{
   analytics: typeof analytics;
   callAnalysis: typeof callAnalysis;
   calls: typeof calls;
+  feedback: typeof feedback;
 }>;
 
 /**

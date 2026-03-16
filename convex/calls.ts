@@ -426,6 +426,9 @@ export const completeAnalysis = internalMutation({
     await ctx.scheduler.runAfter(0, internal.analytics.generateSnapshot, {
       callId: args.callId,
     });
+    await ctx.scheduler.runAfter(0, internal.feedback.generateSnapshot, {
+      callId: args.callId,
+    });
 
     return callAnalysisId;
   },

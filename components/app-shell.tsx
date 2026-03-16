@@ -48,7 +48,7 @@ const navigationItems = [
   },
   {
     title: "Feedback",
-    href: "#",
+    href: "/feedback",
     icon: MessageSquareQuote,
   },
   {
