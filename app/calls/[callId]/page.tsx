@@ -94,11 +94,11 @@ function ScoreRing({ value }: { value: number }) {
 function MetricRow({ label, value }: { label: string; value: number }) {
   return (
     <div className="grid grid-cols-[minmax(0,140px)_1fr_auto] items-center gap-4">
-      <p className="text-lg font-medium tracking-tight">{label}</p>
+      <p className="text-base font-medium tracking-tight">{label}</p>
       <div className="rounded-full bg-muted/70 p-1">
         <Progress value={value} className="h-3 rounded-full bg-muted/80" />
       </div>
-      <p className="w-11 text-right text-2xl font-semibold tracking-tight text-lime-400">
+      <p className="w-11 text-right text-xl font-semibold tracking-tight text-lime-400">
         {value}
       </p>
     </div>
@@ -121,7 +121,7 @@ function DashboardSkeleton({
   return (
     <>
       <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(360px,0.95fr)]">
-        <section className="rounded-[2rem] border border-white/10 bg-card/80 p-7 shadow-[0_20px_60px_rgba(0,0,0,0.18)]">
+        <section className="rounded-[2rem] border border-white/10 bg-card/80 p-7 shadow-[0_20px_60px_rgba(0,0,0,0.18)] self-start">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-3xl font-semibold tracking-tight">
@@ -164,7 +164,7 @@ function DashboardSkeleton({
         </section>
 
         <div className="space-y-6">
-          <section className="rounded-[2rem] border border-white/10 bg-card/80 p-7 shadow-[0_20px_60px_rgba(0,0,0,0.18)]">
+          <section className="rounded-[2rem] border border-white/10 bg-card/80 p-7 shadow-[0_20px_60px_rgba(0,0,0,0.18)] self-start">
             <div className="space-y-4">
               <p className="text-sm font-medium uppercase tracking-[0.18em] text-muted-foreground">
                 Analysis status
@@ -354,257 +354,276 @@ export default function CallDetailsPage() {
 
   return (
     <AppShell activeHref="/calls" title="Call Dashboard">
-      <section className="rounded-[2rem] border border-white/8 bg-[radial-gradient(circle_at_top_left,_rgba(71,85,105,0.18),_transparent_32%),linear-gradient(180deg,rgba(15,23,42,0.65),rgba(2,6,23,0.9))] p-6 shadow-[0_25px_80px_rgba(0,0,0,0.28)] md:p-8">
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-          <div>
-            <Link
-              href="/calls"
-              className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              <ArrowLeft className="size-4" />
-              Back to Calls
-            </Link>
-            <h2 className="mt-5 text-4xl font-semibold tracking-tight text-foreground">
-              {call.title}
-            </h2>
-            <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
-              <span className="inline-flex items-center gap-2">
-                <Clock3 className="size-4" />
-                {formatDateTime(call.createdAt)}
-              </span>
-              <span>
-                Duration:{" "}
-                {transcriptDuration
-                  ? formatClockDuration(transcriptDuration)
-                  : "Pending"}
-              </span>
-            </div>
-            <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">
-              {call.description || "No description provided for this call."}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-3 xl:justify-end">
-            <button
-              type="button"
-              onClick={handleStartAnalysis}
-              disabled={!canStartAnalysis || isStartingAnalysis}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isStartingAnalysis ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Sparkles className="size-4" />
-              )}
-              {call.pendingAnalysis?.status === "failed"
-                ? "Retry analysis"
-                : "Start analysis"}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleDeleteCall(call.title)}
-              disabled={isDeleting || pendingStatus}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-destructive/30 px-5 text-sm font-medium text-destructive transition-colors hover:bg-destructive/5 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isDeleting ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Trash2 className="size-4" />
-              )}
-              Delete call
-            </button>
-          </div>
-        </div>
-
-        {error ? (
-          <div className="mt-6 rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-            {error}
-          </div>
-        ) : null}
-
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
-          <div className="rounded-[1.6rem] border border-white/8 bg-background/30 p-4 backdrop-blur">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-medium">Seller channel</p>
-              {call.sellerAudioUrl ? (
-                <PlayCircle className="size-4 text-muted-foreground" />
-              ) : null}
-            </div>
-            {call.sellerAudioUrl ? (
-              <audio
-                className="mt-3 w-full"
-                controls
-                src={call.sellerAudioUrl}
-              />
-            ) : (
-              <p className="mt-3 text-sm text-muted-foreground">
-                Audio unavailable.
-              </p>
-            )}
-          </div>
-
-          <div className="rounded-[1.6rem] border border-white/8 bg-background/30 p-4 backdrop-blur">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-medium">Client channel</p>
-              {call.clientAudioUrl ? (
-                <PlayCircle className="size-4 text-muted-foreground" />
-              ) : null}
-            </div>
-            {call.clientAudioUrl ? (
-              <audio
-                className="mt-3 w-full"
-                controls
-                src={call.clientAudioUrl}
-              />
-            ) : (
-              <p className="mt-3 text-sm text-muted-foreground">
-                Audio unavailable.
-              </p>
-            )}
-          </div>
-        </div>
-
-        {call.pendingAnalysis?.status === "failed" ? (
-          <div className="mt-6 rounded-[1.6rem] border border-destructive/30 bg-destructive/5 p-5">
-            <p className="text-sm font-medium text-destructive">
-              Analysis failed
-            </p>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              {call.pendingAnalysis.errorMessage ||
-                "An unexpected error occurred while processing this call."}
-            </p>
-          </div>
-        ) : null}
-
-        {call.analysis ? (
-          <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(360px,0.95fr)]">
-            <section className="rounded-[2rem] border border-white/10 bg-card/80 p-7 shadow-[0_20px_60px_rgba(0,0,0,0.18)]">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-3xl font-semibold tracking-tight">
-                    Transcript
-                  </p>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Every scored transcript snippet, ordered chronologically.
-                  </p>
-                </div>
-                <Badge variant="outline">
-                  {call.transcriptEntries.length} entries
-                </Badge>
+      <div className="-mx-4 -my-6 min-h-full bg-[radial-gradient(circle_at_top_left,_rgba(71,85,105,0.2),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(14,165,233,0.08),_transparent_24%),linear-gradient(180deg,rgba(15,23,42,0.2),rgba(2,6,23,0.46))] px-4 py-6 md:-mx-6 md:px-6">
+        <section>
+          <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+            <div>
+              <Link
+                href="/calls"
+                className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <ArrowLeft className="size-4" />
+                Back to Calls
+              </Link>
+              <h2 className="mt-5 text-4xl font-semibold tracking-tight text-foreground">
+                {call.title}
+              </h2>
+              <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+                <span className="inline-flex items-center gap-2">
+                  <Clock3 className="size-4" />
+                  {formatDateTime(call.createdAt)}
+                </span>
+                <span>
+                  Duration:{" "}
+                  {transcriptDuration
+                    ? formatClockDuration(transcriptDuration)
+                    : "Pending"}
+                </span>
               </div>
+              <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">
+                {call.description || "No description provided for this call."}
+              </p>
+            </div>
 
-              <ScrollArea className="mt-6 h-[820px] pr-4">
-                <div className="space-y-4">
-                  {call.transcriptEntries.map((entry, index) => (
-                    <article
-                      key={`${entry.channel}-${entry.startTimestampMs}-${index}`}
-                      className={cn(
-                        "rounded-[1.6rem] border p-5 transition-colors",
-                        entry.isObjection
-                          ? "border-amber-500/30 bg-amber-500/8"
-                          : entry.channel === "seller"
-                            ? "border-cyan-400/10 bg-cyan-400/6"
-                            : "border-white/6 bg-background/45",
-                      )}
-                    >
-                      <div className="flex items-start gap-4">
-                        <div
+            <div className="flex flex-wrap gap-3 xl:justify-end">
+              <button
+                type="button"
+                onClick={handleStartAnalysis}
+                disabled={!canStartAnalysis || isStartingAnalysis}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isStartingAnalysis ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Sparkles className="size-4" />
+                )}
+                {call.pendingAnalysis?.status === "failed"
+                  ? "Retry analysis"
+                  : "Start analysis"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleDeleteCall(call.title)}
+                disabled={isDeleting || pendingStatus}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-destructive/30 px-5 text-sm font-medium text-destructive transition-colors hover:bg-destructive/5 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Trash2 className="size-4" />
+                )}
+                Delete call
+              </button>
+            </div>
+          </div>
+
+          {error ? (
+            <div className="mt-6 rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+              {error}
+            </div>
+          ) : null}
+
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            <div className="rounded-[1.6rem] border border-white/8 bg-background/30 p-4 backdrop-blur">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-medium">Seller channel</p>
+                {call.sellerAudioUrl ? (
+                  <PlayCircle className="size-4 text-muted-foreground" />
+                ) : null}
+              </div>
+              {call.sellerAudioUrl ? (
+                <audio
+                  className="mt-3 w-full"
+                  controls
+                  src={call.sellerAudioUrl}
+                />
+              ) : (
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Audio unavailable.
+                </p>
+              )}
+            </div>
+
+            <div className="rounded-[1.6rem] border border-white/8 bg-background/30 p-4 backdrop-blur">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-medium">Client channel</p>
+                {call.clientAudioUrl ? (
+                  <PlayCircle className="size-4 text-muted-foreground" />
+                ) : null}
+              </div>
+              {call.clientAudioUrl ? (
+                <audio
+                  className="mt-3 w-full"
+                  controls
+                  src={call.clientAudioUrl}
+                />
+              ) : (
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Audio unavailable.
+                </p>
+              )}
+            </div>
+          </div>
+
+          {call.pendingAnalysis?.status === "failed" ? (
+            <div className="mt-6 rounded-[1.6rem] border border-destructive/30 bg-destructive/5 p-5">
+              <p className="text-sm font-medium text-destructive">
+                Analysis failed
+              </p>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                {call.pendingAnalysis.errorMessage ||
+                  "An unexpected error occurred while processing this call."}
+              </p>
+            </div>
+          ) : null}
+
+          {call.analysis ? (
+            <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(360px,0.95fr)]">
+              <section className="min-h-[20rem] max-h-[54rem] self-start overflow-hidden rounded-[2rem] border border-white/10 bg-card/80 p-7 shadow-[0_20px_60px_rgba(0,0,0,0.18)] self-start">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-3xl font-semibold tracking-tight">
+                      Transcript
+                    </p>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Every scored transcript snippet, ordered chronologically.
+                    </p>
+                  </div>
+                  <Badge variant="outline">
+                    {call.transcriptEntries.length} entries
+                  </Badge>
+                </div>
+
+                {call.transcriptEntries.length === 0 ? (
+                  <ScrollArea className="mt-6 pr-4">
+                    <div className="flex items-start justify-center rounded-[1.6rem] border border-dashed border-white/10 bg-background/30 px-6 py-10 text-center self-start">
+                      <div className="max-w-md self-start">
+                        <p className="text-lg font-medium tracking-tight">
+                          No transcript entries available
+                        </p>
+                        <p className="mt-3 text-sm leading-7 text-muted-foreground">
+                          Analysis finished, but no transcript lines were saved
+                          for this call. Try rerunning analysis if you expected
+                          the conversation to appear here.
+                        </p>
+                      </div>
+                    </div>
+                  </ScrollArea>
+                ) : (
+                  <ScrollArea className="mt-6 max-h-[calc(54rem-8rem)] pr-4">
+                    <div className="space-y-4">
+                      {call.transcriptEntries.map((entry, index) => (
+                        <article
+                          key={`${entry.channel}-${entry.startTimestampMs}-${index}`}
                           className={cn(
-                            "flex size-12 shrink-0 items-center justify-center rounded-full text-sm font-semibold",
-                            entry.channel === "seller"
-                              ? "bg-cyan-400/14 text-cyan-300"
-                              : "bg-muted text-foreground",
+                            "rounded-[1.6rem] border p-5 transition-colors",
+                            entry.isObjection
+                              ? "border-amber-500/30 bg-amber-500/8"
+                              : entry.channel === "seller"
+                                ? "border-cyan-400/10 bg-cyan-400/6"
+                                : "border-white/6 bg-background/45",
                           )}
                         >
-                          {getSpeakerInitials(entry.channel)}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-3">
-                            <p className="text-2xl font-medium tracking-tight">
-                              {getSpeakerLabel(entry.channel)}
-                            </p>
-                            {entry.isObjection ? (
-                              <Badge className="border-amber-500/40 bg-amber-500/12 text-amber-300">
-                                Objection
-                              </Badge>
-                            ) : null}
-                            <span className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                              {formatTimestamp(entry.startTimestampMs)}
-                            </span>
+                          <div className="flex items-start gap-4">
+                            <div
+                              className={cn(
+                                "flex size-12 shrink-0 items-center justify-center rounded-full text-sm font-semibold",
+                                entry.channel === "seller"
+                                  ? "bg-cyan-400/14 text-cyan-300"
+                                  : "bg-muted text-foreground",
+                              )}
+                            >
+                              {getSpeakerInitials(entry.channel)}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-3">
+                                <p className="text-2xl font-medium tracking-tight">
+                                  {getSpeakerLabel(entry.channel)}
+                                </p>
+                                {entry.isObjection ? (
+                                  <Badge className="border-amber-500/40 bg-amber-500/12 text-amber-300">
+                                    Objection
+                                  </Badge>
+                                ) : null}
+                                <span className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                                  {formatTimestamp(entry.startTimestampMs)}
+                                </span>
+                              </div>
+                              <p className="mt-3 text-[1.05rem] leading-8 text-foreground/95">
+                                {entry.text}
+                              </p>
+                            </div>
                           </div>
-                          <p className="mt-3 text-[1.05rem] leading-8 text-foreground/95">
-                            {entry.text}
-                          </p>
-                        </div>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </ScrollArea>
-            </section>
-
-            <div className="space-y-6">
-              <section className="rounded-[2rem] border border-white/10 bg-card/80 p-7 shadow-[0_20px_60px_rgba(0,0,0,0.18)]">
-                <ScoreRing value={call.analysis.overallRating} />
+                        </article>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                )}
               </section>
 
-              <section className="rounded-[2rem] border border-white/10 bg-card/80 p-7 shadow-[0_20px_60px_rgba(0,0,0,0.18)]">
-                <p className="text-3xl font-semibold tracking-tight">
-                  AI Summary
-                </p>
-                <p className="mt-5 text-lg leading-9 text-muted-foreground">
-                  {call.analysis.aiSummary}
-                </p>
-              </section>
+              <div className="h-full space-y-6">
+                <section className="rounded-[2rem] border border-white/10 bg-card/80 p-7 shadow-[0_20px_60px_rgba(0,0,0,0.18)]">
+                  <ScoreRing value={call.analysis.overallRating} />
+                </section>
 
-              <section className="rounded-[2rem] border border-white/10 bg-card/80 p-7 shadow-[0_20px_60px_rgba(0,0,0,0.18)]">
-                <p className="text-3xl font-semibold tracking-tight">
-                  Criteria Breakdown
-                </p>
-                <div className="mt-7 space-y-6">
-                  <MetricRow
-                    label="Quickness"
-                    value={call.analysis.quickness}
-                  />
-                  <MetricRow
-                    label="Introduction"
-                    value={call.analysis.introduction}
-                  />
-                  <MetricRow
-                    label="Knowledge"
-                    value={call.analysis.knowledge}
-                  />
-                  <MetricRow
-                    label="Hospitality"
-                    value={call.analysis.hospitality}
-                  />
-                  <MetricRow
-                    label="Call to Action"
-                    value={call.analysis.callToAction}
-                  />
-                </div>
-              </section>
+                <section className="rounded-[2rem] border border-white/10 bg-card/80 p-7 shadow-[0_20px_60px_rgba(0,0,0,0.18)]">
+                  <p className="text-2xl font-semibold tracking-tight">
+                    AI Summary
+                  </p>
+                  <p className="mt-4 text-sm leading-7 text-muted-foreground">
+                    {call.analysis.aiSummary}
+                  </p>
+                </section>
+
+                <section className="rounded-[2rem] border border-white/10 bg-card/80 p-7 shadow-[0_20px_60px_rgba(0,0,0,0.18)]">
+                  <p className="text-2xl font-semibold tracking-tight">
+                    Criteria Breakdown
+                  </p>
+                  <div className="mt-6 space-y-5">
+                    <MetricRow
+                      label="Quickness"
+                      value={call.analysis.quickness}
+                    />
+                    <MetricRow
+                      label="Introduction"
+                      value={call.analysis.introduction}
+                    />
+                    <MetricRow
+                      label="Knowledge"
+                      value={call.analysis.knowledge}
+                    />
+                    <MetricRow
+                      label="Hospitality"
+                      value={call.analysis.hospitality}
+                    />
+                    <MetricRow
+                      label="Call to Action"
+                      value={call.analysis.callToAction}
+                    />
+                  </div>
+                </section>
+              </div>
             </div>
-          </div>
-        ) : (
-          <DashboardSkeleton
-            title={
-              pendingStatus
-                ? "Analysis is still running"
-                : "Dashboard fills in after analysis starts"
-            }
-            description={
-              pendingStatus
-                ? "We are transcribing both channels, extracting objections, and scoring the call."
-                : "Trigger analysis to generate the transcript, summary, and score breakdown for this call."
-            }
-            isQueued={call.pendingAnalysis?.status === "queued"}
-            progress={call.pendingAnalysis?.progress}
-            currentStep={call.pendingAnalysis?.currentStep}
-          />
-        )}
-      </section>
+          ) : (
+            <DashboardSkeleton
+              title={
+                pendingStatus
+                  ? "Analysis is still running"
+                  : "Dashboard fills in after analysis starts"
+              }
+              description={
+                pendingStatus
+                  ? "We are transcribing both channels, extracting objections, and scoring the call."
+                  : "Trigger analysis to generate the transcript, summary, and score breakdown for this call."
+              }
+              isQueued={call.pendingAnalysis?.status === "queued"}
+              progress={call.pendingAnalysis?.progress}
+              currentStep={call.pendingAnalysis?.currentStep}
+            />
+          )}
+        </section>
+      </div>
     </AppShell>
   );
 }
