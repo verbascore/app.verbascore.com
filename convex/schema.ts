@@ -27,6 +27,25 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index("by_call", ["callId"]),
 
+  pending_analysis: defineTable({
+    callId: v.id("calls"),
+    ownerUserId: v.string(),
+    status: v.union(
+      v.literal("queued"),
+      v.literal("processing"),
+      v.literal("completed"),
+      v.literal("failed"),
+    ),
+    progress: v.number(),
+    currentStep: v.string(),
+    errorMessage: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_call", ["callId"])
+    .index("by_owner_user", ["ownerUserId"])
+    .index("by_owner_status", ["ownerUserId", "status"]),
+
   callTranscriptEntries: defineTable({
     callAnalysisId: v.id("callAnalyses"),
     channel: v.union(v.literal("seller"), v.literal("client")),
