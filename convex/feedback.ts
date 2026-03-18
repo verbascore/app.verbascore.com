@@ -4,86 +4,87 @@ import { Doc } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { internalMutation, query } from "./_generated/server";
 import { requireTeamMembership } from "./lib/teamAccess";
-
-const metricMeta = {
-  quickness: {
-    label: "Quickness",
-    resourceTitle: "Fast Opening Checklist",
-  },
-  introduction: {
-    label: "Introduction",
-    resourceTitle: "Opening Framework Playbook",
-  },
-  knowledge: {
-    label: "Product Knowledge",
-    resourceTitle: "Discovery and Product Mapping Guide",
-  },
-  hospitality: {
-    label: "Hospitality",
-    resourceTitle: "Energy Management for Sales",
-  },
-  callToAction: {
-    label: "Call-to-Action",
-    resourceTitle: "Closing Techniques Script",
-  },
-} as const;
-
-type MetricKey = keyof typeof metricMeta;
-
-function average(values: number[]) {
-  return values.length
-    ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length)
-    : 0;
-}
-
-function normalizeObjectionLabel(text: string) {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function summarizeObjectionLabel(text: string) {
-  const sentence = text.split(/[.!?]/)[0]?.trim() || text.trim();
-  return sentence.length > 56 ? `${sentence.slice(0, 53)}...` : sentence;
-}
+import {
+  buildFeedbackSnapshots,
+  getActivePendingAnalysis,
+  listAnalyzedEntries,
+  listTeamSellers,
+} from "./lib/performance";
 
 export const getDashboard = query({
   args: {},
   handler: async (ctx) => {
     const { membership } = await requireTeamMembership(ctx);
+    const sellerOptions = await listTeamSellers(ctx.db, membership.teamId);
 
-    const snapshots = await ctx.db
-      .query("feedback")
-      .withIndex("by_team_created_at", (q) =>
-        q.eq("teamId", membership.teamId),
-      )
-      .order("desc")
-      .collect();
+    if (membership.role === "owner") {
+      const averageOwnerIds = sellerOptions.map((seller) => seller.userId);
+      const averageDashboard = {
+        snapshots: buildFeedbackSnapshots(
+          await listAnalyzedEntries({
+            db: ctx.db,
+            teamId: membership.teamId,
+            ownerUserIds: averageOwnerIds,
+          }),
+        ),
+        activePendingAnalysis: await getActivePendingAnalysis({
+          db: ctx.db,
+          teamId: membership.teamId,
+          ownerUserIds: averageOwnerIds,
+        }),
+      };
 
-    const pendingAnalyses = await ctx.db
-      .query("pending_analysis")
-      .withIndex("by_team", (q) => q.eq("teamId", membership.teamId))
-      .collect();
+      const dashboardsBySeller = Object.fromEntries(
+        await Promise.all(
+          sellerOptions.map(async (seller) => {
+            const ownerUserIds = [seller.userId];
+            return [
+              seller.userId,
+              {
+                snapshots: buildFeedbackSnapshots(
+                  await listAnalyzedEntries({
+                    db: ctx.db,
+                    teamId: membership.teamId,
+                    ownerUserIds,
+                  }),
+                ),
+                activePendingAnalysis: await getActivePendingAnalysis({
+                  db: ctx.db,
+                  teamId: membership.teamId,
+                  ownerUserIds,
+                }),
+              },
+            ];
+          }),
+        ),
+      );
 
-    const activePendingAnalysis = pendingAnalyses
-      .filter(
-        (entry) => entry.status === "queued" || entry.status === "processing",
-      )
-      .sort((a, b) => b.updatedAt - a.updatedAt)[0];
+      return {
+        snapshots: [],
+        activePendingAnalysis: null,
+        sellerOptions,
+        dashboardsBySeller,
+        averageDashboard,
+      };
+    }
 
+    const ownerUserIds = [membership.userId];
     return {
-      snapshots,
-      activePendingAnalysis: activePendingAnalysis
-        ? {
-            callId: activePendingAnalysis.callId,
-            status: activePendingAnalysis.status,
-            progress: activePendingAnalysis.progress,
-            currentStep: activePendingAnalysis.currentStep,
-            updatedAt: activePendingAnalysis.updatedAt,
-          }
-        : null,
+      snapshots: buildFeedbackSnapshots(
+        await listAnalyzedEntries({
+          db: ctx.db,
+          teamId: membership.teamId,
+          ownerUserIds,
+        }),
+      ),
+      activePendingAnalysis: await getActivePendingAnalysis({
+        db: ctx.db,
+        teamId: membership.teamId,
+        ownerUserIds,
+      }),
+      sellerOptions: [],
+      dashboardsBySeller: {},
+      averageDashboard: null,
     };
   },
 });
@@ -117,6 +118,10 @@ export const generateSnapshot = internalMutation({
     }> = [];
 
     for (const call of calls) {
+      if (call.ownerUserId !== ownerUserId) {
+        continue;
+      }
+
       const analysis = await ctx.db
         .query("callAnalyses")
         .withIndex("by_call", (q) => q.eq("callId", call._id))
@@ -146,150 +151,25 @@ export const generateSnapshot = internalMutation({
       return null;
     }
 
-    const newestFirst = analyzedCalls;
-    const latest = newestFirst[0];
-    const previous = newestFirst[1];
-    const sourceCallIds = newestFirst.map(({ call }) => call._id);
-    const sourceCallTitles = newestFirst.map(({ call }) => call.title);
+    const synthesizedSnapshot = buildFeedbackSnapshots(analyzedCalls)[0];
+    const latest = analyzedCalls[0];
 
-    const metricAverages = {
-      quickness: average(newestFirst.map(({ analysis }) => analysis.quickness)),
-      introduction: average(
-        newestFirst.map(({ analysis }) => analysis.introduction),
-      ),
-      knowledge: average(newestFirst.map(({ analysis }) => analysis.knowledge)),
-      hospitality: average(
-        newestFirst.map(({ analysis }) => analysis.hospitality),
-      ),
-      callToAction: average(
-        newestFirst.map(({ analysis }) => analysis.callToAction),
-      ),
-    };
-
-    const weakestMetrics = (
-      Object.entries(metricAverages) as Array<[MetricKey, number]>
-    )
-      .sort((a, b) => a[1] - b[1])
-      .slice(0, 3);
-
-    const focusItems = weakestMetrics.map(([metric]) => {
-      switch (metric) {
-        case "introduction":
-          return "Start every call with the customer's name and a clear agenda within the first 15 seconds";
-        case "quickness":
-          return "Reduce the time to the first relevant discovery question so the conversation gains momentum faster";
-        case "knowledge":
-          return "Anchor product explanations to the buyer's specific use case before listing capabilities";
-        case "hospitality":
-          return "Slow down after objections and acknowledge the concern before redirecting the conversation";
-        case "callToAction":
-          return "End every call with a specific next step, owner, and timeline";
-      }
-    });
-
-    const recommendations: Array<{
-      priority: "high" | "medium" | "low";
-      status: "new" | "in_progress" | "watch";
-      title: string;
-      description: string;
-      linkedCallIds: typeof sourceCallIds;
-      linkedCallTitles: typeof sourceCallTitles;
-      resourceTitle: string;
-    }> = [];
-
-    const ctaDrop =
-      latest.analysis.callToAction -
-      (previous?.analysis.callToAction ?? latest.analysis.callToAction);
-    if (latest.analysis.callToAction <= 78 || ctaDrop < 0) {
-      recommendations.push({
-        priority: "high",
-        status: "new",
-        title: "Strengthen Call-to-Action Closings",
-        description:
-          ctaDrop < 0
-            ? `Your CTA score dropped ${Math.abs(ctaDrop)} points from the prior analyzed call. Focus on proposing a concrete next step instead of ending with open-ended follow-ups.`
-            : "Recent calls are ending without a strong next-step commitment. Focus on confirming the owner, deliverable, and deadline before wrapping.",
-        linkedCallIds: sourceCallIds,
-        linkedCallTitles: sourceCallTitles,
-        resourceTitle: metricMeta.callToAction.resourceTitle,
-      });
-    }
-
-    const objectionEntries = newestFirst.flatMap(({ transcriptEntries }) =>
-      transcriptEntries.filter((entry) => entry.isObjection),
-    );
-    if (objectionEntries.length > 0) {
-      const topObjection = Array.from(
-        objectionEntries.reduce((accumulator, entry) => {
-          const normalized = normalizeObjectionLabel(entry.text);
-          if (!normalized) {
-            return accumulator;
-          }
-
-          const existing = accumulator.get(normalized);
-          if (existing) {
-            existing.count += 1;
-            return accumulator;
-          }
-
-          accumulator.set(normalized, {
-            label: summarizeObjectionLabel(entry.text),
-            count: 1,
-          });
-          return accumulator;
-        }, new Map<string, { label: string; count: number }>()),
-      ).sort((a, b) => b[1].count - a[1].count)[0]?.[1];
-
-      recommendations.push({
-        priority: "high",
-        status: "in_progress",
-        title: "Improve Objection Handling",
-        description: topObjection
-          ? `The objection "${topObjection.label}" keeps showing up across recent calls. Use an acknowledge-bridge-benefit response before returning to value.`
-          : "Pricing and fit objections are surfacing repeatedly. Practice acknowledging the concern, bridging back to the use case, and restating business value.",
-        linkedCallIds: sourceCallIds,
-        linkedCallTitles: sourceCallTitles,
-        resourceTitle: "Objection Handling Playbook",
-      });
-    }
-
-    if (latest.analysis.hospitality <= 80 || metricAverages.hospitality <= 82) {
-      recommendations.push({
-        priority: "medium",
-        status: "new",
-        title: "Raise Hospitality Consistency",
-        description:
-          "Your hospitality signal is softer than the rest of your scorecard. Add one empathy statement after pushback and mirror the buyer's phrasing before answering.",
-        linkedCallIds: sourceCallIds,
-        linkedCallTitles: sourceCallTitles,
-        resourceTitle: metricMeta.hospitality.resourceTitle,
-      });
-    }
-
-    if (recommendations.length < 3) {
-      recommendations.push({
-        priority: "medium",
-        status: "watch",
-        title: "Tighten Early Discovery",
-        description:
-          "Move from intro to discovery faster by asking a role-specific problem question earlier in the conversation and adapting examples to the answer.",
-        linkedCallIds: sourceCallIds,
-        linkedCallTitles: sourceCallTitles,
-        resourceTitle: metricMeta.quickness.resourceTitle,
-      });
+    if (!synthesizedSnapshot) {
+      return null;
     }
 
     const now = Date.now();
+    const recommendations = synthesizedSnapshot.recommendations.slice(0, 4);
 
     const snapshotId = await ctx.db.insert("feedback", {
       teamId,
       ownerUserId,
       latestCallId: latest.call._id,
       latestCallTitle: latest.call.title,
-      sourceCallIds,
-      sourceCallTitles,
-      focusItems,
-      recommendations: recommendations.slice(0, 4),
+      sourceCallIds: synthesizedSnapshot.sourceCallIds,
+      sourceCallTitles: synthesizedSnapshot.sourceCallTitles,
+      focusItems: synthesizedSnapshot.focusItems,
+      recommendations,
       createdAt: now,
       updatedAt: now,
     });

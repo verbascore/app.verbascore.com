@@ -1,5 +1,6 @@
 export type CallRowData = {
   _id: string;
+  ownerUserId: string;
   title: string;
   description?: string;
   createdAt: number;

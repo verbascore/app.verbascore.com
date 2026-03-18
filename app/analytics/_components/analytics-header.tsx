@@ -1,16 +1,20 @@
 "use client";
 
+import { ReactNode } from "react";
+
 import { MetricKey } from "./types";
 import { metricMeta } from "./utils";
 
 type AnalyticsHeaderProps = {
   metric: MetricKey;
   onMetricChange: (metric: MetricKey) => void;
+  scopeControl?: ReactNode;
 };
 
 export function AnalyticsHeader({
   metric,
   onMetricChange,
+  scopeControl,
 }: AnalyticsHeaderProps) {
   const metrics: MetricKey[] = [
     "overallRating",
@@ -33,7 +37,9 @@ export function AnalyticsHeader({
           </h2>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col items-start gap-3 lg:items-end">
+          {scopeControl}
+          <div className="flex flex-wrap gap-2">
           {metrics.map((item) => (
             <button
               key={item}
@@ -48,6 +54,7 @@ export function AnalyticsHeader({
               {metricMeta[item].label}
             </button>
           ))}
+          </div>
         </div>
       </div>
     </section>

@@ -9,6 +9,7 @@ import {
 } from "./_generated/server";
 import {
   assertCanManageEntity,
+  assertRole,
   assertTeamAccess,
   requireTeamMembership,
 } from "./lib/teamAccess";
@@ -36,6 +37,7 @@ export const createCall = mutation({
   },
   handler: async (ctx, args) => {
     const { identity, membership } = await requireTeamMembership(ctx);
+    assertRole(membership, ["seller"]);
     const now = Date.now();
 
     return await ctx.db.insert("calls", {

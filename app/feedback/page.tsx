@@ -5,9 +5,13 @@ import { useQuery } from "convex/react";
 
 import { api } from "@/convex/_generated/api";
 import { AppShell } from "@/components/app-shell";
+import { SellerScopeSelector } from "@/components/seller-scope-selector";
 import { TeamEmptyState } from "@/components/team-empty-state";
 
-import { FeedbackDashboardData } from "./_components/types";
+import {
+  FeedbackDashboardData,
+  FeedbackDashboardSlice,
+} from "./_components/types";
 import { FeedbackEmptyState } from "./_components/feedback-empty-state";
 import { FeedbackHeader } from "./_components/feedback-header";
 import { FeedbackHistoryNav } from "./_components/feedback-history-nav";
@@ -24,12 +28,42 @@ export default function FeedbackPage() {
     | FeedbackDashboardData
     | undefined;
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [selectedSeller, setSelectedSeller] = useState("average");
 
-  const snapshots = data?.snapshots ?? [];
+  const activeDashboard: FeedbackDashboardSlice | null = useMemo(() => {
+    if (!workspace?.membership || !data) {
+      return null;
+    }
+
+    if (workspace.membership.role !== "owner") {
+      return {
+        snapshots: data.snapshots,
+        activePendingAnalysis: data.activePendingAnalysis,
+      };
+    }
+
+    if (selectedSeller === "average") {
+      return data.averageDashboard;
+    }
+
+    return data.dashboardsBySeller[selectedSeller] ?? null;
+  }, [data, selectedSeller, workspace?.membership]);
+
+  const snapshots = activeDashboard?.snapshots ?? [];
 
   useEffect(() => {
     setSelectedIndex(0);
   }, [snapshots.length]);
+
+  useEffect(() => {
+    if (
+      workspace?.membership?.role === "owner" &&
+      selectedSeller !== "average" &&
+      !(data?.dashboardsBySeller?.[selectedSeller])
+    ) {
+      setSelectedSeller("average");
+    }
+  }, [data?.dashboardsBySeller, selectedSeller, workspace?.membership?.role]);
 
   const snapshot = useMemo(
     () => snapshots[Math.min(selectedIndex, Math.max(snapshots.length - 1, 0))],
@@ -57,11 +91,23 @@ export default function FeedbackPage() {
       workspaceTitle={workspace.team.title}
       workspaceRole={workspace.membership.role}
     >
-      <FeedbackHeader />
+      <FeedbackHeader
+        scopeControl={
+          workspace.membership.role === "owner" ? (
+            <SellerScopeSelector
+              label="Seller"
+              value={selectedSeller}
+              onValueChange={setSelectedSeller}
+              sellers={data?.sellerOptions ?? []}
+              averageLabel="Average across sellers"
+            />
+          ) : undefined
+        }
+      />
 
-      {data?.activePendingAnalysis ? (
+      {activeDashboard?.activePendingAnalysis ? (
         <FeedbackPendingBanner
-          activePendingAnalysis={data.activePendingAnalysis}
+          activePendingAnalysis={activeDashboard.activePendingAnalysis}
         />
       ) : null}
 

@@ -1,6 +1,12 @@
 import { Doc } from "./_generated/dataModel";
 import { query } from "./_generated/server";
 import { requireTeamMembership } from "./lib/teamAccess";
+import {
+  buildAnalyticsSnapshots,
+  buildFeedbackSnapshots,
+  listAnalyzedEntries,
+  listTeamSellers,
+} from "./lib/performance";
 
 function unique<T>(values: T[]) {
   return Array.from(new Set(values));
@@ -11,34 +17,41 @@ export const getHomeDashboard = query({
   handler: async (ctx) => {
     const { membership } = await requireTeamMembership(ctx);
     const teamId = membership.teamId;
-
-    const analyticsSnapshots = await ctx.db
-      .query("analytics")
-      .withIndex("by_team_created_at", (q) => q.eq("teamId", teamId))
-      .order("desc")
-      .collect();
-
-    const feedbackSnapshots = await ctx.db
-      .query("feedback")
-      .withIndex("by_team_created_at", (q) => q.eq("teamId", teamId))
-      .order("desc")
-      .collect();
+    const sellerOptions = await listTeamSellers(ctx.db, teamId);
+    const scopedUserIds =
+      membership.role === "owner"
+        ? sellerOptions.map((seller) => seller.userId)
+        : [membership.userId];
 
     const calls = await ctx.db
       .query("calls")
       .withIndex("by_team_updated_at", (q) => q.eq("teamId", teamId))
       .order("desc")
       .collect();
+    const visibleCalls = calls.filter((call) =>
+      scopedUserIds.includes(call.ownerUserId),
+    );
+    const sellerMap = new Map(
+      sellerOptions.map((seller) => [seller.userId, seller.name]),
+    );
+    const analyzedEntries = await listAnalyzedEntries({
+      db: ctx.db,
+      teamId,
+      ownerUserIds: scopedUserIds,
+    });
+    const latestAnalytics = buildAnalyticsSnapshots(analyzedEntries)[0] ?? null;
+    const latestFeedback = buildFeedbackSnapshots(analyzedEntries)[0] ?? null;
 
     const recentCalls: Array<{
       _id: Doc<"calls">["_id"];
       title: string;
       createdAt: number;
       overallRating: number | null;
+      sellerName?: string;
     }> = [];
     let analyzedCallsCount = 0;
 
-    for (const call of calls) {
+    for (const call of visibleCalls) {
       const analysis = await ctx.db
         .query("callAnalyses")
         .withIndex("by_call", (q) => q.eq("callId", call._id))
@@ -54,12 +67,10 @@ export const getHomeDashboard = query({
           title: call.title,
           createdAt: call.createdAt,
           overallRating: analysis?.overallRating ?? null,
+          sellerName: sellerMap.get(call.ownerUserId),
         });
       }
     }
-
-    const latestAnalytics = analyticsSnapshots[0] ?? null;
-    const latestFeedback = feedbackSnapshots[0] ?? null;
 
     const strengths: string[] = [];
     const weaknesses: string[] = [];

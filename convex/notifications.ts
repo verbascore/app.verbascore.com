@@ -6,12 +6,21 @@ import {
   assertTeamAccess,
   requireTeamMembership,
 } from "./lib/teamAccess";
+import { listTeamSellers } from "./lib/performance";
 
 export const listNotifications = query({
   args: {},
   handler: async (ctx) => {
     const { membership } = await requireTeamMembership(ctx);
     const now = Date.now();
+    const sellerOptions = await listTeamSellers(ctx.db, membership.teamId);
+    const sellerMap = new Map(
+      sellerOptions.map((seller) => [seller.userId, seller]),
+    );
+    const visibleOwnerIds =
+      membership.role === "owner"
+        ? sellerOptions.map((seller) => seller.userId)
+        : [membership.userId];
 
     const notifications = await ctx.db
       .query("notifications")
@@ -21,10 +30,17 @@ export const listNotifications = query({
       .order("desc")
       .collect();
 
-    return notifications.filter(
-      (notification) =>
-        !notification.snoozedUntil || notification.snoozedUntil <= now,
-    );
+    return notifications
+      .filter(
+        (notification) =>
+          visibleOwnerIds.includes(notification.ownerUserId) &&
+          (!notification.snoozedUntil || notification.snoozedUntil <= now),
+      )
+      .map((notification) => ({
+        ...notification,
+        sellerName: sellerMap.get(notification.ownerUserId)?.name,
+        sellerEmail: sellerMap.get(notification.ownerUserId)?.email,
+      }));
   },
 });
 

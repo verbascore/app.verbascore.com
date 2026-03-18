@@ -45,6 +45,12 @@ export function NotificationCard({
           <h3 className="text-lg font-semibold tracking-tight">
             {notification.title}
           </h3>
+          {notification.sellerName ? (
+            <p className="mt-1 text-sm text-muted-foreground">
+              Seller: {notification.sellerName}
+              {notification.sellerEmail ? ` · ${notification.sellerEmail}` : ""}
+            </p>
+          ) : null}
           <p className="mt-2 text-base text-muted-foreground">
             {notification.message}
           </p>

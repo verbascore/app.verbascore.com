@@ -27,7 +27,21 @@ export type ActivePendingAnalysis = {
   updatedAt: number;
 };
 
+export type SellerOption = {
+  userId: string;
+  name: string;
+  email?: string;
+};
+
+export type FeedbackDashboardSlice = {
+  snapshots: FeedbackSnapshot[];
+  activePendingAnalysis: ActivePendingAnalysis | null;
+};
+
 export type FeedbackDashboardData = {
   snapshots: FeedbackSnapshot[];
   activePendingAnalysis: ActivePendingAnalysis | null;
+  sellerOptions: SellerOption[];
+  dashboardsBySeller: Record<string, FeedbackDashboardSlice>;
+  averageDashboard: FeedbackDashboardSlice | null;
 };

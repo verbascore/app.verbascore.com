@@ -45,6 +45,7 @@ export type DashboardCall = {
   title: string;
   createdAt: number;
   overallRating: number | null;
+  sellerName?: string;
 };
 
 export type HomeDashboardData = {

@@ -5,11 +5,16 @@ import { useQuery } from "convex/react";
 
 import { api } from "@/convex/_generated/api";
 import { AppShell } from "@/components/app-shell";
+import { SellerScopeSelector } from "@/components/seller-scope-selector";
 import { TeamEmptyState } from "@/components/team-empty-state";
 
 import { AnalyticsEmptyState } from "./_components/analytics-empty-state";
 import { AnalyticsHeader } from "./_components/analytics-header";
-import { AnalyticsDashboardData, MetricKey } from "./_components/types";
+import {
+  AnalyticsDashboardData,
+  AnalyticsDashboardSlice,
+  MetricKey,
+} from "./_components/types";
 import { CloseRateCard } from "./_components/close-rate-card";
 import { HistoryNav } from "./_components/history-nav";
 import { MetricCards } from "./_components/metric-cards";
@@ -28,12 +33,42 @@ export default function AnalyticsPage() {
   const [selectedMetric, setSelectedMetric] =
     useState<MetricKey>("overallRating");
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [selectedSeller, setSelectedSeller] = useState("average");
 
-  const snapshots = data?.snapshots ?? [];
+  const activeDashboard: AnalyticsDashboardSlice | null = useMemo(() => {
+    if (!workspace?.membership || !data) {
+      return null;
+    }
+
+    if (workspace.membership.role !== "owner") {
+      return {
+        snapshots: data.snapshots,
+        activePendingAnalysis: data.activePendingAnalysis,
+      };
+    }
+
+    if (selectedSeller === "average") {
+      return data.averageDashboard;
+    }
+
+    return data.dashboardsBySeller[selectedSeller] ?? null;
+  }, [data, selectedSeller, workspace?.membership]);
+
+  const snapshots = activeDashboard?.snapshots ?? [];
 
   useEffect(() => {
     setSelectedIndex(0);
   }, [snapshots.length]);
+
+  useEffect(() => {
+    if (
+      workspace?.membership?.role === "owner" &&
+      selectedSeller !== "average" &&
+      !(data?.dashboardsBySeller?.[selectedSeller])
+    ) {
+      setSelectedSeller("average");
+    }
+  }, [data?.dashboardsBySeller, selectedSeller, workspace?.membership?.role]);
 
   const snapshot = useMemo(
     () => snapshots[Math.min(selectedIndex, Math.max(snapshots.length - 1, 0))],
@@ -64,10 +99,21 @@ export default function AnalyticsPage() {
       <AnalyticsHeader
         metric={selectedMetric}
         onMetricChange={setSelectedMetric}
+        scopeControl={
+          workspace.membership.role === "owner" ? (
+            <SellerScopeSelector
+              label="Seller"
+              value={selectedSeller}
+              onValueChange={setSelectedSeller}
+              sellers={data?.sellerOptions ?? []}
+              averageLabel="Average across sellers"
+            />
+          ) : undefined
+        }
       />
 
-      {data?.activePendingAnalysis ? (
-        <PendingBanner activePendingAnalysis={data.activePendingAnalysis} />
+      {activeDashboard?.activePendingAnalysis ? (
+        <PendingBanner activePendingAnalysis={activeDashboard.activePendingAnalysis} />
       ) : null}
 
       {!data ? (

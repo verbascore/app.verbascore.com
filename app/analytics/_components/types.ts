@@ -52,9 +52,23 @@ export type ActivePendingAnalysis = {
   updatedAt: number;
 };
 
+export type SellerOption = {
+  userId: string;
+  name: string;
+  email?: string;
+};
+
+export type AnalyticsDashboardSlice = {
+  snapshots: AnalyticsSnapshot[];
+  activePendingAnalysis: ActivePendingAnalysis | null;
+};
+
 export type AnalyticsDashboardData = {
   snapshots: AnalyticsSnapshot[];
   activePendingAnalysis: ActivePendingAnalysis | null;
+  sellerOptions: SellerOption[];
+  dashboardsBySeller: Record<string, AnalyticsDashboardSlice>;
+  averageDashboard: AnalyticsDashboardSlice | null;
 };
 
 export type MetricKey =

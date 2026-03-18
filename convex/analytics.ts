@@ -4,6 +4,12 @@ import { Doc } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { internalMutation, query } from "./_generated/server";
 import { requireTeamMembership } from "./lib/teamAccess";
+import {
+  buildAnalyticsSnapshots,
+  getActivePendingAnalysis,
+  listAnalyzedEntries,
+  listTeamSellers,
+} from "./lib/performance";
 
 function buildLabel(timestamp: number) {
   return new Intl.DateTimeFormat("en-US", {
@@ -42,37 +48,76 @@ export const getDashboard = query({
   args: {},
   handler: async (ctx) => {
     const { membership } = await requireTeamMembership(ctx);
+    const sellerOptions = await listTeamSellers(ctx.db, membership.teamId);
 
-    const snapshots = await ctx.db
-      .query("analytics")
-      .withIndex("by_team_created_at", (q) =>
-        q.eq("teamId", membership.teamId),
-      )
-      .order("desc")
-      .collect();
+    if (membership.role === "owner") {
+      const averageOwnerIds = sellerOptions.map((seller) => seller.userId);
+      const averageDashboard = {
+        snapshots: buildAnalyticsSnapshots(
+          await listAnalyzedEntries({
+            db: ctx.db,
+            teamId: membership.teamId,
+            ownerUserIds: averageOwnerIds,
+          }),
+        ),
+        activePendingAnalysis: await getActivePendingAnalysis({
+          db: ctx.db,
+          teamId: membership.teamId,
+          ownerUserIds: averageOwnerIds,
+        }),
+      };
 
-    const pendingAnalyses = await ctx.db
-      .query("pending_analysis")
-      .withIndex("by_team", (q) => q.eq("teamId", membership.teamId))
-      .collect();
+      const dashboardsBySeller = Object.fromEntries(
+        await Promise.all(
+          sellerOptions.map(async (seller) => {
+            const ownerUserIds = [seller.userId];
+            return [
+              seller.userId,
+              {
+                snapshots: buildAnalyticsSnapshots(
+                  await listAnalyzedEntries({
+                    db: ctx.db,
+                    teamId: membership.teamId,
+                    ownerUserIds,
+                  }),
+                ),
+                activePendingAnalysis: await getActivePendingAnalysis({
+                  db: ctx.db,
+                  teamId: membership.teamId,
+                  ownerUserIds,
+                }),
+              },
+            ];
+          }),
+        ),
+      );
 
-    const activePendingAnalysis = pendingAnalyses
-      .filter(
-        (entry) => entry.status === "queued" || entry.status === "processing",
-      )
-      .sort((a, b) => b.updatedAt - a.updatedAt)[0];
+      return {
+        snapshots: [],
+        activePendingAnalysis: null,
+        sellerOptions,
+        dashboardsBySeller,
+        averageDashboard,
+      };
+    }
 
+    const ownerUserIds = [membership.userId];
     return {
-      snapshots,
-      activePendingAnalysis: activePendingAnalysis
-        ? {
-            callId: activePendingAnalysis.callId,
-            status: activePendingAnalysis.status,
-            progress: activePendingAnalysis.progress,
-            currentStep: activePendingAnalysis.currentStep,
-            updatedAt: activePendingAnalysis.updatedAt,
-          }
-        : null,
+      snapshots: buildAnalyticsSnapshots(
+        await listAnalyzedEntries({
+          db: ctx.db,
+          teamId: membership.teamId,
+          ownerUserIds,
+        }),
+      ),
+      activePendingAnalysis: await getActivePendingAnalysis({
+        db: ctx.db,
+        teamId: membership.teamId,
+        ownerUserIds,
+      }),
+      sellerOptions: [],
+      dashboardsBySeller: {},
+      averageDashboard: null,
     };
   },
 });
@@ -106,6 +151,10 @@ export const generateSnapshot = internalMutation({
     }> = [];
 
     for (const call of calls) {
+      if (call.ownerUserId !== ownerUserId) {
+        continue;
+      }
+
       const analysis = await ctx.db
         .query("callAnalyses")
         .withIndex("by_call", (q) => q.eq("callId", call._id))
@@ -136,11 +185,9 @@ export const generateSnapshot = internalMutation({
     }
 
     const newestFirst = analyzedCalls;
-    const chartOrder = [...newestFirst].reverse();
     const latest = newestFirst[0];
     const previous = newestFirst[1];
-
-    const trendPoints = chartOrder.map(({ call, analysis }) => ({
+    const trendPoints = [...newestFirst].reverse().map(({ call, analysis }) => ({
       label: buildLabel(analysis.updatedAt),
       createdAt: analysis.updatedAt,
       callId: call._id,

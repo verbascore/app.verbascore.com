@@ -22,6 +22,11 @@ export function DashboardRecentCalls({ calls }: { calls: DashboardCall[] }) {
                 <p className="mt-1 text-xs text-muted-foreground">
                   {formatDateTime(call.createdAt)}
                 </p>
+                {call.sellerName ? (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Seller: {call.sellerName}
+                  </p>
+                ) : null}
               </div>
               <div
                 className={`rounded-full px-3 py-1 text-sm font-semibold ${
