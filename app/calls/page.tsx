@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 
 import { api } from "@/convex/_generated/api";
 import { AppShell } from "@/components/app-shell";
+import { TeamEmptyState } from "@/components/team-empty-state";
 
 import { CallCreateForm } from "./_components/call-create-form";
 import { CallsHero } from "./_components/calls-hero";
@@ -14,7 +15,11 @@ import { CallRowData } from "./_components/types";
 import { uploadFile } from "./_components/utils";
 
 export default function CallsPage() {
-  const calls = useQuery(api.calls.listCalls);
+  const workspace = useQuery(api.teams.getCurrentWorkspace);
+  const calls = useQuery(
+    api.calls.listCalls,
+    workspace?.team ? {} : "skip",
+  );
   const generateUploadUrl = useMutation(api.calls.generateUploadUrl);
   const createCall = useMutation(api.calls.createCall);
   const startAnalysis = useMutation(api.calls.startAnalysis);
@@ -117,10 +122,30 @@ export default function CallsPage() {
     }
   }
 
+  if (!workspace) {
+    return (
+      <AppShell activeHref="/calls" title="Sales Calls">
+        <section className="mt-6 rounded-3xl border bg-card/80 p-6 text-sm text-muted-foreground shadow-sm">
+          Loading workspace...
+        </section>
+      </AppShell>
+    );
+  }
+
+  if (!workspace.team || !workspace.membership) {
+    return (
+      <AppShell activeHref="/calls" title="Sales Calls">
+        <TeamEmptyState />
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell
       activeHref="/calls"
       title="Sales Calls"
+      workspaceTitle={workspace.team.title}
+      workspaceRole={workspace.membership.role}
       headerActions={
         <button
           onClick={() => setIsCreating((value) => !value)}

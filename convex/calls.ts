@@ -7,22 +7,11 @@ import {
   mutation,
   query,
 } from "./_generated/server";
-
-async function requireIdentity(ctx: {
-  auth: {
-    getUserIdentity: () => Promise<{
-      subject: string;
-    } | null>;
-  };
-}) {
-  const identity = await ctx.auth.getUserIdentity();
-
-  if (!identity) {
-    throw new ConvexError("Unauthorized");
-  }
-
-  return identity;
-}
+import {
+  assertCanManageEntity,
+  assertTeamAccess,
+  requireTeamMembership,
+} from "./lib/teamAccess";
 
 function clampScore(score: number, label: string) {
   if (score < 0 || score > 100) {
@@ -33,7 +22,7 @@ function clampScore(score: number, label: string) {
 export const generateUploadUrl = mutation({
   args: {},
   handler: async (ctx) => {
-    await requireIdentity(ctx);
+    await requireTeamMembership(ctx);
     return await ctx.storage.generateUploadUrl();
   },
 });
@@ -46,10 +35,11 @@ export const createCall = mutation({
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const identity = await requireIdentity(ctx);
+    const { identity, membership } = await requireTeamMembership(ctx);
     const now = Date.now();
 
     return await ctx.db.insert("calls", {
+      teamId: membership.teamId,
       ownerUserId: identity.subject,
       sellerAudioStorageId: args.sellerAudioStorageId,
       clientAudioStorageId: args.clientAudioStorageId,
@@ -64,11 +54,11 @@ export const createCall = mutation({
 export const listCalls = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await requireIdentity(ctx);
+    const { membership } = await requireTeamMembership(ctx);
     const calls = await ctx.db
       .query("calls")
-      .withIndex("by_owner_updated_at", (q) =>
-        q.eq("ownerUserId", identity.subject),
+      .withIndex("by_team_updated_at", (q) =>
+        q.eq("teamId", membership.teamId),
       )
       .order("desc")
       .collect();
@@ -107,10 +97,14 @@ export const getCallDetails = query({
     callId: v.id("calls"),
   },
   handler: async (ctx, args) => {
-    const identity = await requireIdentity(ctx);
+    const { membership } = await requireTeamMembership(ctx);
     const call = await ctx.db.get(args.callId);
 
-    if (!call || call.ownerUserId !== identity.subject) {
+    if (!call) {
+      return null;
+    }
+
+    if (membership.teamId !== call.teamId) {
       return null;
     }
 
@@ -147,12 +141,14 @@ export const startAnalysis = mutation({
     callId: v.id("calls"),
   },
   handler: async (ctx, args) => {
-    const identity = await requireIdentity(ctx);
+    const { identity, membership } = await requireTeamMembership(ctx);
     const call = await ctx.db.get(args.callId);
 
-    if (!call || call.ownerUserId !== identity.subject) {
+    if (!call) {
       throw new ConvexError("Call not found");
     }
+
+    assertTeamAccess({ membership, teamId: call.teamId });
 
     const existingAnalysis = await ctx.db
       .query("callAnalyses")
@@ -176,6 +172,7 @@ export const startAnalysis = mutation({
     const pendingAnalysisId = existingPending
       ? existingPending._id
       : await ctx.db.insert("pending_analysis", {
+          teamId: membership.teamId,
           callId: call._id,
           ownerUserId: identity.subject,
           status: "queued",
@@ -198,6 +195,7 @@ export const startAnalysis = mutation({
     await ctx.scheduler.runAfter(0, internal.callAnalysis.processCallAnalysis, {
       callId: call._id,
       pendingAnalysisId,
+      teamId: membership.teamId,
       ownerUserId: identity.subject,
     });
 
@@ -210,12 +208,15 @@ export const deleteCall = mutation({
     callId: v.id("calls"),
   },
   handler: async (ctx, args) => {
-    const identity = await requireIdentity(ctx);
+    const { membership } = await requireTeamMembership(ctx);
     const call = await ctx.db.get(args.callId);
 
-    if (!call || call.ownerUserId !== identity.subject) {
+    if (!call) {
       throw new ConvexError("Call not found");
     }
+
+    assertTeamAccess({ membership, teamId: call.teamId });
+    assertCanManageEntity({ membership, ownerUserId: call.ownerUserId });
 
     const pendingAnalysis = await ctx.db
       .query("pending_analysis")
@@ -265,12 +266,17 @@ export const deleteCall = mutation({
 export const getCallForProcessing = internalQuery({
   args: {
     callId: v.id("calls"),
+    teamId: v.id("teams"),
     ownerUserId: v.string(),
   },
   handler: async (ctx, args) => {
     const call = await ctx.db.get(args.callId);
 
-    if (!call || call.ownerUserId !== args.ownerUserId) {
+    if (
+      !call ||
+      call.ownerUserId !== args.ownerUserId ||
+      call.teamId !== args.teamId
+    ) {
       throw new ConvexError("Call not found");
     }
 
@@ -356,6 +362,11 @@ export const completeAnalysis = internalMutation({
       .first();
 
     let callAnalysisId = existingAnalysis?._id;
+    const callRecord = await ctx.db.get(args.callId);
+
+    if (!callRecord) {
+      throw new ConvexError("Call not found");
+    }
 
     if (existingAnalysis) {
       await ctx.db.patch(existingAnalysis._id, {
@@ -381,6 +392,8 @@ export const completeAnalysis = internalMutation({
       );
     } else {
       callAnalysisId = await ctx.db.insert("callAnalyses", {
+        teamId: callRecord.teamId,
+        ownerUserId: callRecord.ownerUserId,
         callId: args.callId,
         aiSummary: args.aiSummary,
         quickness: args.quickness,
@@ -401,6 +414,8 @@ export const completeAnalysis = internalMutation({
     for (const entry of args.transcriptEntries) {
       clampScore(entry.rating, "transcript entry rating");
       await ctx.db.insert("callTranscriptEntries", {
+        teamId: callRecord.teamId,
+        ownerUserId: callRecord.ownerUserId,
         callAnalysisId,
         channel: entry.channel,
         text: entry.text,
@@ -423,10 +438,9 @@ export const completeAnalysis = internalMutation({
       updatedAt: now,
     });
 
-    const callRecord = await ctx.db.get(args.callId);
-
     if (callRecord) {
       await ctx.runMutation(internal.notifications.createNotification, {
+        teamId: callRecord.teamId,
         ownerUserId: callRecord.ownerUserId,
         level: args.overallRating < 60 ? "critical" : "info",
         title:

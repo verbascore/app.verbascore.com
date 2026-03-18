@@ -11,11 +11,14 @@ import {
   Library,
   MessageSquareQuote,
   PhoneCall,
+  Users2,
 } from "lucide-react";
 
+import { TeamSidebarSwitcher } from "@/components/team-sidebar-switcher";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -57,6 +60,11 @@ const navigationItems = [
     icon: Bell,
   },
   {
+    title: "Teams",
+    href: "/teams",
+    icon: Users2,
+  },
+  {
     title: "Materials",
     href: "/materials",
     icon: Library,
@@ -68,11 +76,15 @@ export function AppShell({
   activeHref,
   children,
   headerActions,
+  workspaceTitle,
+  workspaceRole,
 }: {
   title: string;
   activeHref: string;
   children: ReactNode;
   headerActions?: ReactNode;
+  workspaceTitle?: string;
+  workspaceRole?: "owner" | "seller";
 }) {
   return (
     <TooltipProvider>
@@ -98,7 +110,7 @@ export function AppShell({
                   Verbascore
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  Revenue command center
+                  {workspaceTitle || "Revenue command center"}
                 </span>
               </div>
             </Link>
@@ -135,6 +147,10 @@ export function AppShell({
             </SidebarGroup>
           </SidebarContent>
 
+          <SidebarFooter className="border-t border-sidebar-border p-3">
+            <TeamSidebarSwitcher />
+          </SidebarFooter>
+
           <SidebarRail />
         </Sidebar>
 
@@ -145,7 +161,7 @@ export function AppShell({
                 <SidebarTrigger className="md:hidden" />
                 <div>
                   <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                    Verbascore
+                    {workspaceTitle || "Verbascore"}
                   </p>
                   <h1 className="text-lg font-semibold tracking-tight">
                     {title}
@@ -153,6 +169,11 @@ export function AppShell({
                 </div>
               </div>
               <div className="flex items-center gap-3">
+                {workspaceRole ? (
+                  <span className="hidden rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground sm:inline-flex">
+                    {workspaceRole}
+                  </span>
+                ) : null}
                 {headerActions}
                 <UserButton />
               </div>

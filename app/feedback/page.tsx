@@ -5,6 +5,7 @@ import { useQuery } from "convex/react";
 
 import { api } from "@/convex/_generated/api";
 import { AppShell } from "@/components/app-shell";
+import { TeamEmptyState } from "@/components/team-empty-state";
 
 import { FeedbackDashboardData } from "./_components/types";
 import { FeedbackEmptyState } from "./_components/feedback-empty-state";
@@ -15,7 +16,11 @@ import { FocusCard } from "./_components/focus-card";
 import { RecommendationCard } from "./_components/recommendation-card";
 
 export default function FeedbackPage() {
-  const data = useQuery(api.feedback.getDashboard) as
+  const workspace = useQuery(api.teams.getCurrentWorkspace);
+  const data = useQuery(
+    api.feedback.getDashboard,
+    workspace?.team ? {} : "skip",
+  ) as
     | FeedbackDashboardData
     | undefined;
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -31,8 +36,31 @@ export default function FeedbackPage() {
     [selectedIndex, snapshots],
   );
 
+  if (!workspace) {
+    return (
+      <AppShell activeHref="/feedback" title="Feedback">
+        <section className="mt-6 rounded-3xl border bg-card/80 p-6 text-sm text-muted-foreground shadow-sm">
+          Loading workspace...
+        </section>
+      </AppShell>
+    );
+  }
+
+  if (!workspace.team || !workspace.membership) {
+    return (
+      <AppShell activeHref="/feedback" title="Feedback">
+        <TeamEmptyState />
+      </AppShell>
+    );
+  }
+
   return (
-    <AppShell activeHref="/feedback" title="Feedback">
+    <AppShell
+      activeHref="/feedback"
+      title="Feedback"
+      workspaceTitle={workspace.team.title}
+      workspaceRole={workspace.membership.role}
+    >
       <FeedbackHeader />
 
       {data?.activePendingAnalysis ? (

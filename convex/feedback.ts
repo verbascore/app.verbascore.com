@@ -3,22 +3,7 @@ import { ConvexError, v } from "convex/values";
 import { Doc } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { internalMutation, query } from "./_generated/server";
-
-async function requireIdentity(ctx: {
-  auth: {
-    getUserIdentity: () => Promise<{
-      subject: string;
-    } | null>;
-  };
-}) {
-  const identity = await ctx.auth.getUserIdentity();
-
-  if (!identity) {
-    throw new ConvexError("Unauthorized");
-  }
-
-  return identity;
-}
+import { requireTeamMembership } from "./lib/teamAccess";
 
 const metricMeta = {
   quickness: {
@@ -67,19 +52,19 @@ function summarizeObjectionLabel(text: string) {
 export const getDashboard = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await requireIdentity(ctx);
+    const { membership } = await requireTeamMembership(ctx);
 
     const snapshots = await ctx.db
       .query("feedback")
-      .withIndex("by_owner_created_at", (q) =>
-        q.eq("ownerUserId", identity.subject),
+      .withIndex("by_team_created_at", (q) =>
+        q.eq("teamId", membership.teamId),
       )
       .order("desc")
       .collect();
 
     const pendingAnalyses = await ctx.db
       .query("pending_analysis")
-      .withIndex("by_owner_user", (q) => q.eq("ownerUserId", identity.subject))
+      .withIndex("by_team", (q) => q.eq("teamId", membership.teamId))
       .collect();
 
     const activePendingAnalysis = pendingAnalyses
@@ -115,9 +100,10 @@ export const generateSnapshot = internalMutation({
     }
 
     const ownerUserId = latestCall.ownerUserId;
+    const teamId = latestCall.teamId;
     const calls = await ctx.db
       .query("calls")
-      .withIndex("by_owner_updated_at", (q) => q.eq("ownerUserId", ownerUserId))
+      .withIndex("by_team_updated_at", (q) => q.eq("teamId", teamId))
       .order("desc")
       .collect();
 
@@ -296,6 +282,7 @@ export const generateSnapshot = internalMutation({
     const now = Date.now();
 
     const snapshotId = await ctx.db.insert("feedback", {
+      teamId,
       ownerUserId,
       latestCallId: latest.call._id,
       latestCallTitle: latest.call.title,
@@ -308,6 +295,7 @@ export const generateSnapshot = internalMutation({
     });
 
     await ctx.runMutation(internal.notifications.createNotification, {
+      teamId,
       ownerUserId,
       level: recommendations.some((item) => item.priority === "high")
         ? "warning"

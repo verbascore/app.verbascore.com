@@ -5,6 +5,7 @@ import { useQuery } from "convex/react";
 
 import { api } from "@/convex/_generated/api";
 import { AppShell } from "@/components/app-shell";
+import { TeamEmptyState } from "@/components/team-empty-state";
 
 import { AnalyticsEmptyState } from "./_components/analytics-empty-state";
 import { AnalyticsHeader } from "./_components/analytics-header";
@@ -17,7 +18,11 @@ import { PendingBanner } from "./_components/pending-banner";
 import { ScoreTrendCard } from "./_components/score-trend-card";
 
 export default function AnalyticsPage() {
-  const data = useQuery(api.analytics.getDashboard) as
+  const workspace = useQuery(api.teams.getCurrentWorkspace);
+  const data = useQuery(
+    api.analytics.getDashboard,
+    workspace?.team ? {} : "skip",
+  ) as
     | AnalyticsDashboardData
     | undefined;
   const [selectedMetric, setSelectedMetric] =
@@ -35,8 +40,31 @@ export default function AnalyticsPage() {
     [selectedIndex, snapshots],
   );
 
+  if (!workspace) {
+    return (
+      <AppShell activeHref="/analytics" title="Analytics">
+        <section className="mt-6 rounded-3xl border bg-card/80 p-6 text-sm text-muted-foreground shadow-sm">
+          Loading workspace...
+        </section>
+      </AppShell>
+    );
+  }
+
+  if (!workspace.team || !workspace.membership) {
+    return (
+      <AppShell activeHref="/analytics" title="Analytics">
+        <TeamEmptyState />
+      </AppShell>
+    );
+  }
+
   return (
-    <AppShell activeHref="/analytics" title="Analytics">
+    <AppShell
+      activeHref="/analytics"
+      title="Analytics"
+      workspaceTitle={workspace.team.title}
+      workspaceRole={workspace.membership.role}
+    >
       <AnalyticsHeader
         metric={selectedMetric}
         onMetricChange={setSelectedMetric}

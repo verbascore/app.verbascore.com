@@ -8,6 +8,7 @@ import { Loader2 } from "lucide-react";
 
 import { api } from "@/convex/_generated/api";
 import { AppShell } from "@/components/app-shell";
+import { TeamEmptyState } from "@/components/team-empty-state";
 
 import { AnalysisSidebar } from "./_components/analysis-sidebar";
 import { AudioPanels } from "./_components/audio-panels";
@@ -38,6 +39,7 @@ function InvalidCallState({ message }: { message: string }) {
 }
 
 export default function CallDetailsPage() {
+  const workspace = useQuery(api.teams.getCurrentWorkspace);
   const params = useParams<{ callId: string }>();
   const router = useRouter();
   const callId =
@@ -45,7 +47,7 @@ export default function CallDetailsPage() {
 
   const call = useQuery(
     api.calls.getCallDetails,
-    callId ? { callId: callId as never } : "skip",
+    callId && workspace?.team ? { callId: callId as never } : "skip",
   ) as CallDetailsData | null | undefined;
   const startAnalysis = useMutation(api.calls.startAnalysis);
   const deleteCall = useMutation(api.calls.deleteCall);
@@ -116,13 +118,37 @@ export default function CallDetailsPage() {
     return <InvalidCallState message="Invalid call id." />;
   }
 
+  if (!workspace) {
+    return (
+      <AppShell activeHref="/calls" title="Call Details">
+        <div className="flex items-center gap-3 rounded-[2rem] border bg-card/90 p-6 text-sm text-muted-foreground shadow-sm">
+          <Loader2 className="size-4 animate-spin" />
+          Loading workspace...
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (!workspace.team || !workspace.membership) {
+    return (
+      <AppShell activeHref="/calls" title="Sales Calls">
+        <TeamEmptyState />
+      </AppShell>
+    );
+  }
+
   if (!call) {
     if (call === null) {
       return <InvalidCallState message="Call not found." />;
     }
 
     return (
-      <AppShell activeHref="/calls" title="Call Details">
+      <AppShell
+        activeHref="/calls"
+        title="Call Details"
+        workspaceTitle={workspace.team.title}
+        workspaceRole={workspace.membership.role}
+      >
         <div className="flex items-center gap-3 rounded-[2rem] border bg-card/90 p-6 text-sm text-muted-foreground shadow-sm">
           <Loader2 className="size-4 animate-spin" />
           Loading call dashboard...
@@ -141,7 +167,12 @@ export default function CallDetailsPage() {
     (!call.pendingAnalysis || call.pendingAnalysis.status === "failed");
 
   return (
-    <AppShell activeHref="/calls" title="Call Dashboard">
+    <AppShell
+      activeHref="/calls"
+      title="Call Dashboard"
+      workspaceTitle={workspace.team.title}
+      workspaceRole={workspace.membership.role}
+    >
       <div className="-mx-4 -my-6 min-h-full bg-[radial-gradient(circle_at_top_left,_rgba(71,85,105,0.2),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(14,165,233,0.08),_transparent_24%),linear-gradient(180deg,rgba(15,23,42,0.2),rgba(2,6,23,0.46))] px-4 py-6 md:-mx-6 md:px-6">
         <section>
           <CallOverview

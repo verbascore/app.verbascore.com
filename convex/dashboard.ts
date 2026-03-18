@@ -1,23 +1,6 @@
-import { ConvexError } from "convex/values";
-
 import { Doc } from "./_generated/dataModel";
 import { query } from "./_generated/server";
-
-async function requireIdentity(ctx: {
-  auth: {
-    getUserIdentity: () => Promise<{
-      subject: string;
-    } | null>;
-  };
-}) {
-  const identity = await ctx.auth.getUserIdentity();
-
-  if (!identity) {
-    throw new ConvexError("Unauthorized");
-  }
-
-  return identity;
-}
+import { requireTeamMembership } from "./lib/teamAccess";
 
 function unique<T>(values: T[]) {
   return Array.from(new Set(values));
@@ -26,24 +9,24 @@ function unique<T>(values: T[]) {
 export const getHomeDashboard = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await requireIdentity(ctx);
-    const ownerUserId = identity.subject;
+    const { membership } = await requireTeamMembership(ctx);
+    const teamId = membership.teamId;
 
     const analyticsSnapshots = await ctx.db
       .query("analytics")
-      .withIndex("by_owner_created_at", (q) => q.eq("ownerUserId", ownerUserId))
+      .withIndex("by_team_created_at", (q) => q.eq("teamId", teamId))
       .order("desc")
       .collect();
 
     const feedbackSnapshots = await ctx.db
       .query("feedback")
-      .withIndex("by_owner_created_at", (q) => q.eq("ownerUserId", ownerUserId))
+      .withIndex("by_team_created_at", (q) => q.eq("teamId", teamId))
       .order("desc")
       .collect();
 
     const calls = await ctx.db
       .query("calls")
-      .withIndex("by_owner_updated_at", (q) => q.eq("ownerUserId", ownerUserId))
+      .withIndex("by_team_updated_at", (q) => q.eq("teamId", teamId))
       .order("desc")
       .collect();
 

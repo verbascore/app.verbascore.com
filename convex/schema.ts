@@ -2,7 +2,41 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
+  userProfiles: defineTable({
+    userId: v.string(),
+    activeTeamId: v.optional(v.id("teams")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_user", ["userId"]),
+
+  teams: defineTable({
+    title: v.string(),
+    description: v.string(),
+    inviteCode: v.string(),
+    createdByUserId: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_created_by", ["createdByUserId"])
+    .index("by_invite_code", ["inviteCode"]),
+
+  teamMembers: defineTable({
+    teamId: v.id("teams"),
+    userId: v.string(),
+    role: v.union(v.literal("owner"), v.literal("seller")),
+    name: v.optional(v.string()),
+    email: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_team", ["teamId"])
+    .index("by_user_team", ["userId", "teamId"])
+    .index("by_team_user", ["teamId", "userId"]),
+
   calls: defineTable({
+    teamId: v.id("teams"),
     ownerUserId: v.string(),
     sellerAudioStorageId: v.id("_storage"),
     clientAudioStorageId: v.id("_storage"),
@@ -11,10 +45,13 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
-    .index("by_owner_user", ["ownerUserId"])
-    .index("by_owner_updated_at", ["ownerUserId", "updatedAt"]),
+    .index("by_team", ["teamId"])
+    .index("by_team_updated_at", ["teamId", "updatedAt"])
+    .index("by_owner_user", ["ownerUserId"]),
 
   callAnalyses: defineTable({
+    teamId: v.id("teams"),
+    ownerUserId: v.string(),
     callId: v.id("calls"),
     aiSummary: v.string(),
     quickness: v.number(),
@@ -25,9 +62,12 @@ export default defineSchema({
     overallRating: v.number(),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index("by_call", ["callId"]),
+  })
+    .index("by_call", ["callId"])
+    .index("by_team_created_at", ["teamId", "createdAt"]),
 
   pending_analysis: defineTable({
+    teamId: v.id("teams"),
     callId: v.id("calls"),
     ownerUserId: v.string(),
     status: v.union(
@@ -43,10 +83,14 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_call", ["callId"])
+    .index("by_team", ["teamId"])
+    .index("by_team_status", ["teamId", "status"])
     .index("by_owner_user", ["ownerUserId"])
     .index("by_owner_status", ["ownerUserId", "status"]),
 
   callTranscriptEntries: defineTable({
+    teamId: v.id("teams"),
+    ownerUserId: v.string(),
     callAnalysisId: v.id("callAnalyses"),
     channel: v.union(v.literal("seller"), v.literal("client")),
     text: v.string(),
@@ -59,6 +103,7 @@ export default defineSchema({
     .index("by_analysis_start_time", ["callAnalysisId", "startTimestampMs"]),
 
   analytics: defineTable({
+    teamId: v.id("teams"),
     ownerUserId: v.string(),
     latestCallId: v.id("calls"),
     latestCallTitle: v.string(),
@@ -106,10 +151,13 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
+    .index("by_team_created_at", ["teamId", "createdAt"])
+    .index("by_team_updated_at", ["teamId", "updatedAt"])
     .index("by_owner_created_at", ["ownerUserId", "createdAt"])
     .index("by_owner_updated_at", ["ownerUserId", "updatedAt"]),
 
   feedback: defineTable({
+    teamId: v.id("teams"),
     ownerUserId: v.string(),
     latestCallId: v.id("calls"),
     latestCallTitle: v.string(),
@@ -138,10 +186,13 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
+    .index("by_team_created_at", ["teamId", "createdAt"])
+    .index("by_team_updated_at", ["teamId", "updatedAt"])
     .index("by_owner_created_at", ["ownerUserId", "createdAt"])
     .index("by_owner_updated_at", ["ownerUserId", "updatedAt"]),
 
   notifications: defineTable({
+    teamId: v.id("teams"),
     ownerUserId: v.string(),
     level: v.union(
       v.literal("critical"),
@@ -162,6 +213,8 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
+    .index("by_team_created_at", ["teamId", "createdAt"])
+    .index("by_team_level", ["teamId", "level"])
     .index("by_owner_created_at", ["ownerUserId", "createdAt"])
     .index("by_owner_level", ["ownerUserId", "level"]),
 });

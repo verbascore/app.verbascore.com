@@ -84,6 +84,7 @@ export const processCallAnalysis = internalAction({
   args: {
     callId: v.id("calls"),
     pendingAnalysisId: v.id("pending_analysis"),
+    teamId: v.id("teams"),
     ownerUserId: v.string(),
   },
   handler: async (ctx, args) => {
@@ -97,6 +98,7 @@ export const processCallAnalysis = internalAction({
 
       const call = await ctx.runQuery(internal.calls.getCallForProcessing, {
         callId: args.callId,
+        teamId: args.teamId,
         ownerUserId: args.ownerUserId,
       });
 
