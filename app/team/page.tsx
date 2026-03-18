@@ -580,15 +580,15 @@ function QuickAccessButton({
   disabled?: boolean;
 } & React.ComponentProps<"button">) {
   return (
-    <button
+    <Button
       type="button"
+      variant="outline"
+      size="lg"
       disabled={disabled}
       {...props}
       className={cn(
-        "flex min-h-28 w-full flex-col items-start justify-between rounded-2xl border p-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60",
-        destructive
-          ? "border-destructive/30 text-destructive hover:bg-destructive/5"
-          : "hover:bg-muted/40",
+        "flex h-auto min-h-28 w-full flex-col items-start justify-between rounded-2xl px-4 py-4 text-left whitespace-normal",
+        destructive && "border-destructive/40 hover:bg-muted/40",
         className,
       )}
     >
@@ -601,11 +601,16 @@ function QuickAccessButton({
       </div>
       <div>
         <div className="text-sm font-semibold tracking-tight">{title}</div>
-        <div className="mt-1 text-xs leading-6 text-muted-foreground">
+        <div
+          className={cn(
+            "mt-1 text-xs leading-6",
+            "text-muted-foreground",
+          )}
+        >
           {description}
         </div>
       </div>
-    </button>
+    </Button>
   );
 }
 
