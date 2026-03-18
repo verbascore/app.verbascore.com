@@ -1,12 +1,14 @@
 "use client";
 
 import { ReactNode, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { UserButton } from "@clerk/nextjs";
 import { useMutation, useQuery } from "convex/react";
 import { CheckCircle2, Link2, Loader2, XCircle } from "lucide-react";
 
 import { api } from "@/convex/_generated/api";
-import { AppShell } from "@/components/app-shell";
 
 export default function InvitationPage() {
   const router = useRouter();
@@ -42,8 +44,33 @@ export default function InvitationPage() {
   }
 
   return (
-    <AppShell activeHref="/" title="Invitation">
-      <div className="mx-auto max-w-3xl">
+    <div className="min-h-svh bg-[radial-gradient(circle_at_top_left,_rgba(34,197,246,0.14),_transparent_24%),linear-gradient(180deg,_transparent,_rgba(15,23,42,0.03))]">
+      <header className="border-b bg-background/70 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 md:px-6">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 ring-1 ring-black/5 dark:ring-white/10">
+              <Image
+                src="/verbascore-mark.png"
+                alt="Verbascore"
+                width={44}
+                height={44}
+                className="h-8 w-8 object-contain"
+                priority
+              />
+            </div>
+            <div>
+              <p className="text-sm font-semibold tracking-tight">Verbascore</p>
+              <p className="text-xs text-muted-foreground">
+                Team invitation
+              </p>
+            </div>
+          </Link>
+
+          <UserButton />
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-3xl px-4 py-10 md:px-6 md:py-14">
         {!token || invitationData === undefined ? (
           <section className="rounded-[2rem] border bg-card/90 p-8 text-sm text-muted-foreground shadow-sm">
             <div className="flex items-center gap-3">
@@ -126,8 +153,8 @@ export default function InvitationPage() {
             )}
           </section>
         )}
-      </div>
-    </AppShell>
+      </main>
+    </div>
   );
 }
 
