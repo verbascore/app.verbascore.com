@@ -1,13 +1,10 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 
 import { AuthGate } from "@/components/auth-gate";
 import ConvexClientProvider from "@/components/convex-client-provider";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
-
-const fontSans = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: "VerbaScore",
@@ -27,9 +24,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={fontSans.variable}>
+    <html lang="en" suppressHydrationWarning>
       <body className="antialiased">
-        <ClerkProvider>
+        <ClerkProvider
+          publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+        >
           <ConvexClientProvider>
             <AuthGate>
               <ThemeProvider>{children}</ThemeProvider>

@@ -50,8 +50,11 @@
 }
 
 :root {
+  --font-sans:
+    "SF Pro Text", "SF Pro Display", "Segoe UI", -apple-system,
+    BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
   --background: oklch(1 0 0);
-  --foreground: oklch(0.148 0.004 228.8);
+--foreground: oklch(0.148 0.004 228.8);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.148 0.004 228.8);
   --popover: oklch(1 0 0);
