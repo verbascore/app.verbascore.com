@@ -35,11 +35,7 @@ export default function MaterialsPage() {
   }
 
   if (!workspace.team || !workspace.membership) {
-    return (
-      <AppShell activeHref="/materials" title="Materials">
-        <TeamEmptyState />
-      </AppShell>
-    );
+    return <TeamEmptyState />;
   }
 
   return (

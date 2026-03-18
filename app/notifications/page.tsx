@@ -42,11 +42,7 @@ export default function NotificationsPage() {
   }
 
   if (!workspace.team || !workspace.membership) {
-    return (
-      <AppShell activeHref="/notifications" title="Notifications">
-        <TeamEmptyState />
-      </AppShell>
-    );
+    return <TeamEmptyState />;
   }
 
   return (

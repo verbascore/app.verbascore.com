@@ -130,11 +130,7 @@ export default function CallDetailsPage() {
   }
 
   if (!workspace.team || !workspace.membership) {
-    return (
-      <AppShell activeHref="/calls" title="Sales Calls">
-        <TeamEmptyState />
-      </AppShell>
-    );
+    return <TeamEmptyState />;
   }
 
   if (!call) {

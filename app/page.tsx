@@ -36,11 +36,7 @@ export default function Page() {
   }
 
   if (!workspace.team || !workspace.membership) {
-    return (
-      <AppShell activeHref="/" title="Dashboard">
-        <TeamEmptyState />
-      </AppShell>
-    );
+    return <TeamEmptyState />;
   }
 
   return (

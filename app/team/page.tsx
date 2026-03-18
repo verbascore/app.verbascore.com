@@ -156,11 +156,7 @@ export default function TeamPage() {
   }
 
   if (!workspace.team || !workspace.membership || !team || !membership) {
-    return (
-      <AppShell activeHref="/team" title="Team">
-        <TeamEmptyState />
-      </AppShell>
-    );
+    return <TeamEmptyState />;
   }
 
   async function handleCopyInvitation(token: string) {
