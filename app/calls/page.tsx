@@ -6,12 +6,10 @@ import { Plus } from "lucide-react";
 
 import { api } from "@/convex/_generated/api";
 import { AppShell } from "@/components/app-shell";
-import { SellerScopeSelector } from "@/components/seller-scope-selector";
 import { TeamEmptyState } from "@/components/team-empty-state";
 
-import { CallCreateForm } from "./_components/call-create-form";
-import { CallsHero } from "./_components/calls-hero";
-import { CallsTable } from "./_components/calls-table";
+import { OwnerCallsView } from "./_components/owner-calls-view";
+import { SellerCallsView } from "./_components/seller-calls-view";
 import { CallRowData } from "./_components/types";
 import { uploadFile } from "./_components/utils";
 
@@ -203,83 +201,42 @@ export default function CallsPage() {
       ) : undefined}
     >
       {isOwner ? (
-        <section className="rounded-3xl border bg-card/90 p-6 shadow-sm">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">
-                Review each seller&apos;s call library, or switch to the team
-                average.
-              </p>
-              <h2 className="mt-2 text-lg font-semibold tracking-tight">
-                Seller Performance Scope
-              </h2>
-            </div>
-            <SellerScopeSelector
-              value={selectedSeller}
-              onValueChange={setSelectedSeller}
-              sellers={sellerOptions}
-              averageLabel="Average across sellers"
-            />
-          </div>
-
-          <div className="mt-5 grid gap-3 md:grid-cols-3">
-            <div className="rounded-2xl border px-4 py-4">
-              <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-                Calls
-              </p>
-              <p className="mt-2 text-2xl font-semibold">{callSummary.totalCalls}</p>
-            </div>
-            <div className="rounded-2xl border px-4 py-4">
-              <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-                Analyzed
-              </p>
-              <p className="mt-2 text-2xl font-semibold">
-                {callSummary.analyzedCalls}
-              </p>
-            </div>
-            <div className="rounded-2xl border px-4 py-4">
-              <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-                Average Score
-              </p>
-              <p className="mt-2 text-2xl font-semibold">
-                {callSummary.averageScore ?? "—"}
-              </p>
-            </div>
-          </div>
-        </section>
-      ) : null}
-
-      <CallsHero />
-
-      {!isOwner && isCreating ? (
-        <CallCreateForm
-          title={title}
-          description={description}
+        <OwnerCallsView
+          selectedSeller={selectedSeller}
+          onSelectedSellerChange={setSelectedSeller}
+          sellerOptions={sellerOptions}
+          totalCalls={callSummary.totalCalls}
+          analyzedCalls={callSummary.analyzedCalls}
+          averageScore={callSummary.averageScore}
+          error={error}
+          calls={visibleCalls as CallRowData[] | undefined}
+          hasCalls={hasCalls}
+          analysisCallId={analysisCallId}
+          deletingCallId={deletingCallId}
+          onStartAnalysis={handleStartAnalysis}
+          onDeleteCall={handleDeleteCall}
+        />
+      ) : (
+        <SellerCallsView
+          isCreating={isCreating}
           isSubmitting={isSubmitting}
           error={error}
+          title={title}
+          description={description}
+          calls={visibleCalls as CallRowData[] | undefined}
+          hasCalls={hasCalls}
+          analysisCallId={analysisCallId}
+          deletingCallId={deletingCallId}
           onTitleChange={setTitle}
           onDescriptionChange={setDescription}
           onSellerFileChange={setSellerFile}
           onClientFileChange={setClientFile}
           onSubmit={handleCreateCall}
           onCancel={() => setIsCreating(false)}
+          onStartAnalysis={handleStartAnalysis}
+          onDeleteCall={handleDeleteCall}
         />
-      ) : null}
-
-      {error ? (
-        <section className="mt-6 rounded-3xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive shadow-sm">
-          {error}
-        </section>
-      ) : null}
-
-      <CallsTable
-        calls={visibleCalls as CallRowData[] | undefined}
-        hasCalls={hasCalls}
-        analysisCallId={analysisCallId}
-        deletingCallId={deletingCallId}
-        onStartAnalysis={handleStartAnalysis}
-        onDeleteCall={handleDeleteCall}
-      />
+      )}
     </AppShell>
   );
 }

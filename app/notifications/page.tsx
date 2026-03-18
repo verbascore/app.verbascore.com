@@ -7,8 +7,8 @@ import { api } from "@/convex/_generated/api";
 import { AppShell } from "@/components/app-shell";
 import { TeamEmptyState } from "@/components/team-empty-state";
 
-import { NotificationsHeader } from "./_components/notifications-header";
-import { NotificationsList } from "./_components/notifications-list";
+import { OwnerNotificationsView } from "./_components/owner-notifications-view";
+import { SellerNotificationsView } from "./_components/seller-notifications-view";
 import { NotificationItem, NotificationLevel } from "./_components/types";
 
 export default function NotificationsPage() {
@@ -52,21 +52,21 @@ export default function NotificationsPage() {
       workspaceTitle={workspace.team.title}
       workspaceRole={workspace.membership.role}
     >
-      <div className="mx-auto w-full max-w-5xl">
-        <NotificationsHeader filter={filter} onFilterChange={setFilter} />
-
-        {!notifications ? (
-          <section className="mt-8 rounded-3xl border bg-card/80 p-6 text-sm text-muted-foreground shadow-sm">
-            Loading notifications...
-          </section>
-        ) : filtered.length === 0 ? (
-          <section className="mt-8 rounded-3xl border bg-card/80 p-8 text-sm text-muted-foreground shadow-sm">
-            No notifications for this filter yet.
-          </section>
-        ) : (
-          <NotificationsList notifications={filtered} />
-        )}
-      </div>
+      {workspace.membership.role === "owner" ? (
+        <OwnerNotificationsView
+          notifications={notifications}
+          filtered={filtered}
+          filter={filter}
+          onFilterChange={setFilter}
+        />
+      ) : (
+        <SellerNotificationsView
+          notifications={notifications}
+          filtered={filtered}
+          filter={filter}
+          onFilterChange={setFilter}
+        />
+      )}
     </AppShell>
   );
 }
