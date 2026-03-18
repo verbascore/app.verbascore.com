@@ -8,14 +8,10 @@ import { api } from "@/convex/_generated/api";
 
 export function TeamEmptyState() {
   const createTeam = useMutation(api.teams.createTeam);
-  const joinTeam = useMutation(api.teams.joinTeam);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [inviteCode, setInviteCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isJoining, setIsJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [joinError, setJoinError] = useState<string | null>(null);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -50,32 +46,6 @@ export function TeamEmptyState() {
     }
   }
 
-  async function handleJoin(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!inviteCode.trim()) {
-      setJoinError("Enter a team invite code to join.");
-      return;
-    }
-
-    try {
-      setIsJoining(true);
-      setJoinError(null);
-      await joinTeam({
-        inviteCode: inviteCode.trim().toUpperCase(),
-      });
-      setInviteCode("");
-    } catch (submissionError) {
-      setJoinError(
-        submissionError instanceof Error
-          ? submissionError.message
-          : "Failed to join the team.",
-      );
-    } finally {
-      setIsJoining(false);
-    }
-  }
-
   return (
     <section className="mx-auto w-full max-w-5xl rounded-[2rem] border bg-card/90 p-8 shadow-sm">
       <div className="grid gap-8 xl:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]">
@@ -89,7 +59,8 @@ export function TeamEmptyState() {
           <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground">
             Calls, analyses, feedback snapshots, and notifications now belong to
             a shared team workspace. Every record still keeps the creator
-            reference, while team owners can manage users and all team data.
+            reference, while team owners can manage users, invitations, and all
+            team data.
           </p>
 
           <div className="mt-8 grid gap-4 md:grid-cols-3">
@@ -157,35 +128,12 @@ export function TeamEmptyState() {
           <div className="my-6 border-t" />
 
           <h3 className="text-lg font-semibold tracking-tight">
-            Join an existing team
+            Joining a team
           </h3>
           <p className="mt-2 text-sm text-muted-foreground">
-            Ask a team owner for the workspace invite code.
+            Ask a team owner to send you an invitation link, then open it while
+            signed in to join their workspace.
           </p>
-
-          <form onSubmit={handleJoin} className="mt-5">
-            <label className="block text-sm font-medium">Invite code</label>
-            <input
-              value={inviteCode}
-              onChange={(event) => setInviteCode(event.target.value)}
-              placeholder="ABC123"
-              className="mt-2 h-11 w-full rounded-xl border bg-background px-4 text-sm uppercase outline-none ring-0 transition-colors focus:border-primary"
-            />
-
-            {joinError ? (
-              <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-                {joinError}
-              </div>
-            ) : null}
-
-            <button
-              type="submit"
-              disabled={isJoining}
-              className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-xl border px-4 text-sm font-medium transition-colors hover:bg-background disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              {isJoining ? "Joining..." : "Join team"}
-            </button>
-          </form>
         </div>
       </div>
     </section>

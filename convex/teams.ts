@@ -1,39 +1,23 @@
 import { ConvexError, v } from "convex/values";
 
-import { mutation, query, type MutationCtx } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import {
   assertRole,
   clearUserActiveTeamIfMatches,
   getMembershipByTeamAndUser,
   getUserMemberships,
-  getUserProfile,
   requireIdentity,
   requireTeamMembership,
   resolveCurrentMembership,
   upsertUserProfile,
 } from "./lib/teamAccess";
 
-function buildInviteCode(seed: string, attempt: number) {
-  const normalizedSeed = seed.replace(/[^a-z0-9]/gi, "").toUpperCase();
-  const timestamp = Date.now().toString(36).toUpperCase();
-
-  return `${normalizedSeed}${timestamp}${attempt}`.slice(-6);
+function normalizeEmail(email: string) {
+  return email.trim().toLowerCase();
 }
 
-async function generateInviteCode(ctx: MutationCtx, seed: string) {
-  for (let attempt = 0; attempt < 10; attempt += 1) {
-    const inviteCode = buildInviteCode(seed, attempt);
-    const existingTeam = await ctx.db
-      .query("teams")
-      .withIndex("by_invite_code", (q) => q.eq("inviteCode", inviteCode))
-      .first();
-
-    if (!existingTeam) {
-      return inviteCode;
-    }
-  }
-
-  throw new ConvexError("Unable to generate a unique invite code.");
+function createInvitationToken() {
+  return crypto.randomUUID();
 }
 
 export const getCurrentWorkspace = query({
@@ -119,11 +103,9 @@ export const createTeam = mutation({
     }
 
     const now = Date.now();
-    const inviteCode = await generateInviteCode(ctx, identity.subject);
     const teamId = await ctx.db.insert("teams", {
       title,
       description,
-      inviteCode,
       createdByUserId: identity.subject,
       createdAt: now,
       updatedAt: now,
@@ -147,66 +129,6 @@ export const createTeam = mutation({
     });
 
     return teamId;
-  },
-});
-
-export const joinTeam = mutation({
-  args: {
-    inviteCode: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const identity = await requireIdentity(ctx);
-
-    const inviteCode = args.inviteCode.trim().toUpperCase();
-
-    if (!inviteCode) {
-      throw new ConvexError("Invite code is required.");
-    }
-
-    const team = await ctx.db
-      .query("teams")
-      .withIndex("by_invite_code", (q) => q.eq("inviteCode", inviteCode))
-      .first();
-
-    if (!team) {
-      throw new ConvexError("Invalid invite code.");
-    }
-
-    const existingMembership = await getMembershipByTeamAndUser({
-      db: ctx.db,
-      teamId: team._id,
-      userId: identity.subject,
-    });
-
-    if (existingMembership) {
-      await upsertUserProfile({
-        ctx,
-        userId: identity.subject,
-        activeTeamId: team._id,
-      });
-
-      return existingMembership._id;
-    }
-
-    const now = Date.now();
-    const membershipId = await ctx.db.insert("teamMembers", {
-      teamId: team._id,
-      userId: identity.subject,
-      role: "seller",
-      name: identity.name ?? undefined,
-      email: identity.email ?? undefined,
-      imageUrl: identity.pictureUrl ?? undefined,
-      createdAt: now,
-      updatedAt: now,
-    });
-
-    await upsertUserProfile({
-      ctx,
-      userId: identity.subject,
-      activeTeamId: team._id,
-    });
-
-    return membershipId;
   },
 });
 
@@ -261,6 +183,172 @@ export const updateTeam = mutation({
   },
 });
 
+export const createInvitation = mutation({
+  args: {
+    email: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const { identity, membership, team } = await requireTeamMembership(ctx);
+    assertRole(membership, ["owner"]);
+    const email = normalizeEmail(args.email);
+
+    if (!email) {
+      throw new ConvexError("Invite email is required.");
+    }
+
+    const existingPending = await ctx.db
+      .query("teamInvitations")
+      .withIndex("by_team_status", (q) =>
+        q.eq("teamId", team._id).eq("status", "pending"),
+      )
+      .collect();
+
+    const duplicate = existingPending.find((invite) => invite.email === email);
+    if (duplicate) {
+      throw new ConvexError("There is already a pending invitation for this email.");
+    }
+
+    const now = Date.now();
+    const token = createInvitationToken();
+    const invitationId = await ctx.db.insert("teamInvitations", {
+      teamId: team._id,
+      email,
+      token,
+      status: "pending",
+      createdByUserId: identity.subject,
+      acceptedByUserId: undefined,
+      acceptedAt: undefined,
+      revokedAt: undefined,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return {
+      invitationId,
+      token,
+    };
+  },
+});
+
+export const revokeInvitation = mutation({
+  args: {
+    invitationId: v.id("teamInvitations"),
+  },
+  handler: async (ctx, args) => {
+    const { membership } = await requireTeamMembership(ctx);
+    assertRole(membership, ["owner"]);
+
+    const invitation = await ctx.db.get(args.invitationId);
+    if (!invitation || invitation.teamId !== membership.teamId) {
+      throw new ConvexError("Invitation not found");
+    }
+
+    await ctx.db.patch(invitation._id, {
+      status: "revoked",
+      revokedAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+export const getInvitationDetails = query({
+  args: {
+    token: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await requireIdentity(ctx);
+    const invitation = await ctx.db
+      .query("teamInvitations")
+      .withIndex("by_token", (q) => q.eq("token", args.token))
+      .first();
+
+    if (!invitation) {
+      return null;
+    }
+
+    const [team, existingMembership] = await Promise.all([
+      ctx.db.get(invitation.teamId),
+      getMembershipByTeamAndUser({
+        db: ctx.db,
+        teamId: invitation.teamId,
+        userId: identity.subject,
+      }),
+    ]);
+
+    if (!team) {
+      return null;
+    }
+
+    return {
+      invitation,
+      team,
+      alreadyMember: !!existingMembership,
+      emailMatches: !identity.email
+        ? true
+        : normalizeEmail(identity.email) === invitation.email,
+    };
+  },
+});
+
+export const acceptInvitation = mutation({
+  args: {
+    token: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await requireIdentity(ctx);
+    const invitation = await ctx.db
+      .query("teamInvitations")
+      .withIndex("by_token", (q) => q.eq("token", args.token))
+      .first();
+
+    if (!invitation) {
+      throw new ConvexError("Invitation not found.");
+    }
+
+    if (invitation.status !== "pending") {
+      throw new ConvexError("This invitation is no longer active.");
+    }
+
+    if (identity.email && normalizeEmail(identity.email) !== invitation.email) {
+      throw new ConvexError(
+        `Sign in with ${invitation.email} to accept this invitation.`,
+      );
+    }
+
+    const existingMembership = await getMembershipByTeamAndUser({
+      db: ctx.db,
+      teamId: invitation.teamId,
+      userId: identity.subject,
+    });
+
+    if (!existingMembership) {
+      await ctx.db.insert("teamMembers", {
+        teamId: invitation.teamId,
+        userId: identity.subject,
+        role: "seller",
+        name: identity.name ?? undefined,
+        email: identity.email ?? invitation.email,
+        imageUrl: identity.pictureUrl ?? undefined,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+    }
+
+    await ctx.db.patch(invitation._id, {
+      status: "accepted",
+      acceptedByUserId: identity.subject,
+      acceptedAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    await upsertUserProfile({
+      ctx,
+      userId: identity.subject,
+      activeTeamId: invitation.teamId,
+    });
+  },
+});
+
 export const updateMemberRole = mutation({
   args: {
     memberId: v.id("teamMembers"),
@@ -294,31 +382,20 @@ export const updateMemberRole = mutation({
   },
 });
 
-export const regenerateInviteCode = mutation({
-  args: {},
-  handler: async (ctx) => {
-    const { membership, team } = await requireTeamMembership(ctx);
-    assertRole(membership, ["owner"]);
-
-    const inviteCode = await generateInviteCode(ctx, team._id);
-
-    await ctx.db.patch(team._id, {
-      inviteCode,
-      updatedAt: Date.now(),
-    });
-
-    return inviteCode;
-  },
-});
-
 export const getTeamManagementData = query({
   args: {},
   handler: async (ctx) => {
     const { membership, team } = await requireTeamMembership(ctx);
-    const members = await ctx.db
-      .query("teamMembers")
-      .withIndex("by_team", (q) => q.eq("teamId", membership.teamId))
-      .collect();
+    const [members, invitations] = await Promise.all([
+      ctx.db
+        .query("teamMembers")
+        .withIndex("by_team", (q) => q.eq("teamId", membership.teamId))
+        .collect(),
+      ctx.db
+        .query("teamInvitations")
+        .withIndex("by_team", (q) => q.eq("teamId", membership.teamId))
+        .collect(),
+    ]);
 
     return {
       team,
@@ -332,6 +409,7 @@ export const getTeamManagementData = query({
           b.name ?? b.email ?? b.userId,
         );
       }),
+      invitations: invitations.sort((a, b) => b.createdAt - a.createdAt),
     };
   },
 });
@@ -368,5 +446,106 @@ export const removeMember = mutation({
     });
 
     await ctx.db.delete(member._id);
+  },
+});
+
+export const deleteTeam = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const { membership, team } = await requireTeamMembership(ctx);
+    assertRole(membership, ["owner"]);
+
+    const [
+      calls,
+      analyses,
+      pendingAnalyses,
+      analyticsSnapshots,
+      feedbackSnapshots,
+      notifications,
+      invitations,
+      members,
+    ] = await Promise.all([
+      ctx.db
+        .query("calls")
+        .withIndex("by_team", (q) => q.eq("teamId", team._id))
+        .collect(),
+      ctx.db
+        .query("callAnalyses")
+        .withIndex("by_team_created_at", (q) => q.eq("teamId", team._id))
+        .collect(),
+      ctx.db
+        .query("pending_analysis")
+        .withIndex("by_team", (q) => q.eq("teamId", team._id))
+        .collect(),
+      ctx.db
+        .query("analytics")
+        .withIndex("by_team_created_at", (q) => q.eq("teamId", team._id))
+        .collect(),
+      ctx.db
+        .query("feedback")
+        .withIndex("by_team_created_at", (q) => q.eq("teamId", team._id))
+        .collect(),
+      ctx.db
+        .query("notifications")
+        .withIndex("by_team_created_at", (q) => q.eq("teamId", team._id))
+        .collect(),
+      ctx.db
+        .query("teamInvitations")
+        .withIndex("by_team", (q) => q.eq("teamId", team._id))
+        .collect(),
+      ctx.db
+        .query("teamMembers")
+        .withIndex("by_team", (q) => q.eq("teamId", team._id))
+        .collect(),
+    ]);
+
+    for (const member of members) {
+      await clearUserActiveTeamIfMatches({
+        ctx,
+        userId: member.userId,
+        teamId: team._id,
+      });
+    }
+
+    for (const analysis of analyses) {
+      const transcriptEntries = await ctx.db
+        .query("callTranscriptEntries")
+        .withIndex("by_analysis", (q) => q.eq("callAnalysisId", analysis._id))
+        .collect();
+
+      for (const entry of transcriptEntries) {
+        await ctx.db.delete(entry._id);
+      }
+    }
+
+    for (const call of calls) {
+      await ctx.storage.delete(call.sellerAudioStorageId);
+      await ctx.storage.delete(call.clientAudioStorageId);
+      await ctx.db.delete(call._id);
+    }
+
+    for (const analysis of analyses) {
+      await ctx.db.delete(analysis._id);
+    }
+    for (const pending of pendingAnalyses) {
+      await ctx.db.delete(pending._id);
+    }
+    for (const snapshot of analyticsSnapshots) {
+      await ctx.db.delete(snapshot._id);
+    }
+    for (const snapshot of feedbackSnapshots) {
+      await ctx.db.delete(snapshot._id);
+    }
+    for (const notification of notifications) {
+      await ctx.db.delete(notification._id);
+    }
+    for (const invitation of invitations) {
+      await ctx.db.delete(invitation._id);
+    }
+    for (const member of members) {
+      await ctx.db.delete(member._id);
+    }
+
+    await ctx.db.delete(team._id);
   },
 });

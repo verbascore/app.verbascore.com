@@ -79,8 +79,8 @@ export function TeamSidebarSwitcher() {
 
             <DropdownMenuSeparator />
 
-            <DropdownMenuItem onSelect={() => router.push("/teams")}>
-              Manage teams
+            <DropdownMenuItem onSelect={() => router.push("/team")}>
+              Manage team
             </DropdownMenuItem>
 
             <TeamCreateDialog

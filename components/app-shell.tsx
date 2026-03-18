@@ -60,8 +60,8 @@ const navigationItems = [
     icon: Bell,
   },
   {
-    title: "Teams",
-    href: "/teams",
+    title: "Team",
+    href: "/team",
     icon: Users2,
   },
   {

@@ -56,7 +56,6 @@ export default function Page() {
         <TeamWorkspaceCard
           title={workspace.team.title}
           description={workspace.team.description}
-          inviteCode={workspace.team.inviteCode}
           memberCount={workspace.members.length}
           role={workspace.membership.role}
         />

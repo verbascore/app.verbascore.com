@@ -12,13 +12,11 @@ export default defineSchema({
   teams: defineTable({
     title: v.string(),
     description: v.string(),
-    inviteCode: v.string(),
+    inviteCode: v.optional(v.string()),
     createdByUserId: v.string(),
     createdAt: v.number(),
     updatedAt: v.number(),
-  })
-    .index("by_created_by", ["createdByUserId"])
-    .index("by_invite_code", ["inviteCode"]),
+  }).index("by_created_by", ["createdByUserId"]),
 
   teamMembers: defineTable({
     teamId: v.id("teams"),
@@ -34,6 +32,27 @@ export default defineSchema({
     .index("by_team", ["teamId"])
     .index("by_user_team", ["userId", "teamId"])
     .index("by_team_user", ["teamId", "userId"]),
+
+  teamInvitations: defineTable({
+    teamId: v.id("teams"),
+    email: v.string(),
+    token: v.string(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("accepted"),
+      v.literal("revoked"),
+    ),
+    createdByUserId: v.string(),
+    acceptedByUserId: v.optional(v.string()),
+    acceptedAt: v.optional(v.number()),
+    revokedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_token", ["token"])
+    .index("by_team", ["teamId"])
+    .index("by_team_status", ["teamId", "status"])
+    .index("by_email", ["email"]),
 
   calls: defineTable({
     teamId: v.id("teams"),
