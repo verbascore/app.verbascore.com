@@ -281,55 +281,55 @@ export default function TeamPage() {
           ) : null}
         </section>
 
-        <section className="py-8">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-semibold tracking-tight">
-                Quick Access
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                Open the most common team actions from here.
-              </p>
+        {isOwner ? (
+          <section className="py-8">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-semibold tracking-tight">
+                  Quick Access
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Open the most common team actions from here.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <TeamSettingsDialog
-              team={team}
-              isOwner={isOwner}
-              onError={setError}
-              trigger={
-                <QuickAccessButton
-                  icon={<PencilLine className="size-5" />}
-                  title="Team settings"
-                  description="Rename the team or update its description."
-                />
-              }
-            />
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <TeamSettingsDialog
+                team={team}
+                isOwner={isOwner}
+                onError={setError}
+                trigger={
+                  <QuickAccessButton
+                    icon={<PencilLine className="size-5" />}
+                    title="Team settings"
+                    description="Rename the team or update its description."
+                  />
+                }
+              />
 
-            <InviteTeammateDialog
-              isOwner={isOwner}
-              onError={setError}
-              trigger={
-                <QuickAccessButton
-                  icon={<UserPlus className="size-5" />}
-                  title="Invite teammate"
-                  description="Create an invitation link for a specific email."
-                />
-              }
-            />
+              <InviteTeammateDialog
+                isOwner={isOwner}
+                onError={setError}
+                trigger={
+                  <QuickAccessButton
+                    icon={<UserPlus className="size-5" />}
+                    title="Invite teammate"
+                    description="Create an invitation link for a specific email."
+                  />
+                }
+              />
 
-            <TeamCreateDialog
-              trigger={
-                <QuickAccessButton
-                  icon={<Users2 className="size-5" />}
-                  title="Create another team"
-                  description="Spin up a new workspace and switch to it."
-                />
-              }
-            />
+              <TeamCreateDialog
+                trigger={
+                  <QuickAccessButton
+                    icon={<Users2 className="size-5" />}
+                    title="Create another team"
+                    description="Spin up a new workspace and switch to it."
+                  />
+                }
+              />
 
-            {isOwner ? (
               <DeleteTeamDialog
                 teamTitle={team.title}
                 isDeleting={isDeleting}
@@ -343,18 +343,12 @@ export default function TeamPage() {
                   />
                 }
               />
-            ) : (
-              <QuickAccessButton
-                icon={<ShieldCheck className="size-5" />}
-                title="Owner required"
-                description="Only team owners can manage settings and invitations."
-                disabled
-              />
-            )}
-          </div>
-        </section>
+            </div>
+          </section>
+        ) : null}
 
-        <section className="py-8">
+        {isOwner ? (
+          <section className="py-8">
           <div className="flex flex-col gap-4 border-b pb-4 md:flex-row md:items-end md:justify-between">
             <div>
               <h3 className="text-lg font-semibold tracking-tight">
@@ -449,7 +443,8 @@ export default function TeamPage() {
               filteredInvitations.length === 1 ? "" : "s"
             }`}
           />
-        </section>
+          </section>
+        ) : null}
 
         <section className="py-8">
           <div className="flex flex-col gap-4 border-b pb-4 md:flex-row md:items-end md:justify-between">
@@ -493,6 +488,10 @@ export default function TeamPage() {
                   paginatedMembers.map((member) => {
                     const label = member.name ?? member.email ?? member.userId;
                     const isCurrentUser = member.userId === membership.userId;
+                    const canEditRole =
+                      isOwner && !(isCurrentUser && member.role === "owner");
+                    const canRemoveMember =
+                      isOwner && !(isCurrentUser && member.role === "owner");
 
                     return (
                       <TableRow key={member._id}>
@@ -501,7 +500,7 @@ export default function TeamPage() {
                           {member.email || member.userId}
                         </TableCell>
                         <TableCell>
-                          {isOwner ? (
+                          {canEditRole ? (
                             <select
                               value={member.role}
                               onChange={(event) =>
@@ -524,7 +523,7 @@ export default function TeamPage() {
                             <span className="inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
                               {isCurrentUser ? "You" : "Member"}
                             </span>
-                            {isOwner ? (
+                            {canRemoveMember ? (
                               <Button
                                 variant="destructive"
                                 size="sm"
