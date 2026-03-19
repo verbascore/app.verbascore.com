@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   Library,
   MessageSquareQuote,
+  Phone,
   PhoneCall,
   Users2,
 } from "lucide-react";
@@ -33,7 +34,7 @@ import {
 } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-const navigationItems = [
+const baseNavigationItems = [
   {
     title: "Dashboard",
     href: "/",
@@ -123,7 +124,18 @@ export function AppShell({
               </SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {navigationItems.map((item) => {
+                  {(workspaceRole === "seller"
+                    ? [
+                        baseNavigationItems[0],
+                        {
+                          title: "Phone",
+                          href: "/phone",
+                          icon: Phone,
+                        },
+                        ...baseNavigationItems.slice(1),
+                      ]
+                    : baseNavigationItems
+                  ).map((item) => {
                     const Icon = item.icon;
 
                     return (

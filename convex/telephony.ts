@@ -1,7 +1,15 @@
 import { ConvexError, v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 
 import { api, internal } from "./_generated/api";
-import { action, httpAction, internalMutation, internalQuery, query } from "./_generated/server";
+import {
+  action,
+  httpAction,
+  internalMutation,
+  internalQuery,
+  mutation,
+  query,
+} from "./_generated/server";
 import { assertRole, requireTeamMembership } from "./lib/teamAccess";
 
 function requireEnvVar(value: string | undefined, label: string) {
@@ -58,6 +66,28 @@ export const listSessions = query({
   },
 });
 
+export const getCurrentSellerSession = query({
+  args: {},
+  handler: async (ctx) => {
+    const { membership } = await requireTeamMembership(ctx);
+    assertRole(membership, ["seller"]);
+
+    const sessions = await ctx.db
+      .query("phoneCallSessions")
+      .withIndex("by_owner_updated_at", (q) =>
+        q.eq("ownerUserId", membership.userId),
+      )
+      .order("desc")
+      .collect();
+
+    return (
+      sessions.find((session) =>
+        ["draft", "initiated", "ringing", "in_progress"].includes(session.status),
+      ) ?? null
+    );
+  },
+});
+
 export const startOutboundCall = action({
   args: {
     title: v.string(),
@@ -69,7 +99,16 @@ export const startOutboundCall = action({
       v.literal("web"),
     ),
   },
-  handler: async (ctx, args) => {
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
+    sessionId: Id<"phoneCallSessions">;
+    sellerCallSid: string;
+    sellerPhoneNumber: string;
+    clientPhoneNumber: string;
+    status: "initiated";
+  }> => {
     const workspace = await ctx.runQuery(api.teams.getCurrentWorkspace, {});
 
     if (!workspace.team || !workspace.membership) {
@@ -121,7 +160,7 @@ export const startOutboundCall = action({
       "CONVEX_SITE_URL",
     );
 
-    const sessionId = await ctx.runMutation(internal.telephony.createSession, {
+    const sessionId = (await ctx.runMutation(internal.telephony.createSession, {
       teamId: workspace.team._id,
       ownerUserId: workspace.membership.userId,
       title,
@@ -129,7 +168,9 @@ export const startOutboundCall = action({
       sellerPhoneNumber,
       clientPhoneNumber,
       platformOrigin: args.platformOrigin,
-    });
+      handledBy: args.platformOrigin === "web" ? "web" : "mobile",
+      handlerLabel: args.platformOrigin === "web" ? "Web" : "Mobile",
+    })) as Id<"phoneCallSessions">;
 
     const baseUrl = convexSiteUrl.replace(/\/$/, "");
     const response = await fetch(
@@ -189,6 +230,8 @@ export const createSession = internalMutation({
       v.literal("android"),
       v.literal("web"),
     ),
+    handledBy: v.union(v.literal("web"), v.literal("mobile")),
+    handlerLabel: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -197,6 +240,9 @@ export const createSession = internalMutation({
       ownerUserId: args.ownerUserId,
       source: "twilio",
       platformOrigin: args.platformOrigin,
+      handledBy: args.handledBy,
+      handlerLabel: args.handlerLabel,
+      handlerUpdatedAt: now,
       title: args.title,
       description: args.description,
       sellerPhoneNumber: args.sellerPhoneNumber,
@@ -204,6 +250,34 @@ export const createSession = internalMutation({
       status: "draft",
       createdAt: now,
       updatedAt: now,
+    });
+  },
+});
+
+export const setSessionHandler = mutation({
+  args: {
+    sessionId: v.id("phoneCallSessions"),
+    handledBy: v.union(v.literal("web"), v.literal("mobile")),
+    handlerLabel: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { membership } = await requireTeamMembership(ctx);
+    assertRole(membership, ["seller"]);
+    const session = await ctx.db.get(args.sessionId);
+
+    if (!session || session.teamId !== membership.teamId) {
+      throw new ConvexError("Session not found.");
+    }
+
+    if (session.ownerUserId !== membership.userId) {
+      throw new ConvexError("You do not have permission to control this session.");
+    }
+
+    await ctx.db.patch(args.sessionId, {
+      handledBy: args.handledBy,
+      handlerLabel: args.handlerLabel,
+      handlerUpdatedAt: Date.now(),
+      updatedAt: Date.now(),
     });
   },
 });
