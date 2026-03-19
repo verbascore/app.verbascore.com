@@ -13,10 +13,12 @@ import type * as callAnalysis from "../callAnalysis.js";
 import type * as calls from "../calls.js";
 import type * as dashboard from "../dashboard.js";
 import type * as feedback from "../feedback.js";
+import type * as http from "../http.js";
 import type * as lib_performance from "../lib/performance.js";
 import type * as lib_teamAccess from "../lib/teamAccess.js";
 import type * as notifications from "../notifications.js";
 import type * as teams from "../teams.js";
+import type * as telephony from "../telephony.js";
 
 import type {
   ApiFromModules,
@@ -30,10 +32,12 @@ declare const fullApi: ApiFromModules<{
   calls: typeof calls;
   dashboard: typeof dashboard;
   feedback: typeof feedback;
+  http: typeof http;
   "lib/performance": typeof lib_performance;
   "lib/teamAccess": typeof lib_teamAccess;
   notifications: typeof notifications;
   teams: typeof teams;
+  telephony: typeof telephony;
 }>;
 
 /**

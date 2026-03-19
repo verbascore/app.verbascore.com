@@ -92,6 +92,7 @@ export async function upsertUserProfile(args: {
   ctx: Pick<MutationCtx, "db">;
   userId: string;
   activeTeamId?: Id<"teams">;
+  phoneNumber?: string;
 }) {
   const existingProfile = await args.ctx.db
     .query("userProfiles")
@@ -102,6 +103,8 @@ export async function upsertUserProfile(args: {
   if (existingProfile) {
     await args.ctx.db.patch(existingProfile._id, {
       activeTeamId: args.activeTeamId,
+      phoneNumber:
+        args.phoneNumber === undefined ? existingProfile.phoneNumber : args.phoneNumber,
       updatedAt: now,
     });
     return existingProfile._id;
@@ -110,6 +113,7 @@ export async function upsertUserProfile(args: {
   return await args.ctx.db.insert("userProfiles", {
     userId: args.userId,
     activeTeamId: args.activeTeamId,
+    phoneNumber: args.phoneNumber,
     createdAt: now,
     updatedAt: now,
   });

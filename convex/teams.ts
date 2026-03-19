@@ -33,12 +33,13 @@ export const getCurrentWorkspace = query({
       return {
         team: null,
         membership: null,
+        profile: null,
         members: [],
         teams: [],
       };
     }
 
-    const [team, members, teams] = await Promise.all([
+    const [team, members, teams, profile] = await Promise.all([
       ctx.db.get(membership.teamId),
       ctx.db
         .query("teamMembers")
@@ -59,6 +60,10 @@ export const getCurrentWorkspace = query({
           };
         }),
       ),
+      ctx.db
+        .query("userProfiles")
+        .withIndex("by_user", (q) => q.eq("userId", identity.subject))
+        .first(),
     ]);
 
     if (!team) {
@@ -68,6 +73,7 @@ export const getCurrentWorkspace = query({
     return {
       team,
       membership,
+      profile,
       members: members.sort((a, b) => {
         if (a.role !== b.role) {
           return a.role === "owner" ? -1 : 1;
@@ -179,6 +185,26 @@ export const updateTeam = mutation({
       title,
       description,
       updatedAt: Date.now(),
+    });
+  },
+});
+
+export const updateCurrentUserProfile = mutation({
+  args: {
+    phoneNumber: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await requireIdentity(ctx);
+    const phoneNumber = args.phoneNumber.trim();
+
+    if (!phoneNumber) {
+      throw new ConvexError("Phone number is required.");
+    }
+
+    await upsertUserProfile({
+      ctx,
+      userId: identity.subject,
+      phoneNumber,
     });
   },
 });

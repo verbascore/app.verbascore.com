@@ -5,6 +5,7 @@ export default defineSchema({
   userProfiles: defineTable({
     userId: v.string(),
     activeTeamId: v.optional(v.id("teams")),
+    phoneNumber: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_user", ["userId"]),
@@ -67,6 +68,47 @@ export default defineSchema({
     .index("by_team", ["teamId"])
     .index("by_team_updated_at", ["teamId", "updatedAt"])
     .index("by_owner_user", ["ownerUserId"]),
+
+  phoneCallSessions: defineTable({
+    teamId: v.id("teams"),
+    ownerUserId: v.string(),
+    source: v.literal("twilio"),
+    platformOrigin: v.union(
+      v.literal("ios"),
+      v.literal("android"),
+      v.literal("web"),
+    ),
+    title: v.string(),
+    description: v.optional(v.string()),
+    sellerPhoneNumber: v.string(),
+    clientPhoneNumber: v.string(),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("initiated"),
+      v.literal("ringing"),
+      v.literal("in_progress"),
+      v.literal("completed"),
+      v.literal("busy"),
+      v.literal("failed"),
+      v.literal("no_answer"),
+      v.literal("canceled"),
+    ),
+    sellerCallSid: v.optional(v.string()),
+    clientCallSid: v.optional(v.string()),
+    recordingSid: v.optional(v.string()),
+    recordingUrl: v.optional(v.string()),
+    recordingStatus: v.optional(v.string()),
+    durationSeconds: v.optional(v.number()),
+    answeredAt: v.optional(v.number()),
+    endedAt: v.optional(v.number()),
+    errorMessage: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_team_updated_at", ["teamId", "updatedAt"])
+    .index("by_owner_updated_at", ["ownerUserId", "updatedAt"])
+    .index("by_seller_call_sid", ["sellerCallSid"])
+    .index("by_client_call_sid", ["clientCallSid"]),
 
   callAnalyses: defineTable({
     teamId: v.id("teams"),
