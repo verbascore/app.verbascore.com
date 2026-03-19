@@ -16,6 +16,7 @@ import type * as feedback from "../feedback.js";
 import type * as http from "../http.js";
 import type * as lib_performance from "../lib/performance.js";
 import type * as lib_teamAccess from "../lib/teamAccess.js";
+import type * as lib_telephony from "../lib/telephony.js";
 import type * as notifications from "../notifications.js";
 import type * as teams from "../teams.js";
 import type * as telephony from "../telephony.js";
@@ -35,6 +36,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   "lib/performance": typeof lib_performance;
   "lib/teamAccess": typeof lib_teamAccess;
+  "lib/telephony": typeof lib_telephony;
   notifications: typeof notifications;
   teams: typeof teams;
   telephony: typeof telephony;

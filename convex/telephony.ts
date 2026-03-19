@@ -10,48 +10,14 @@ import {
   mutation,
   query,
 } from "./_generated/server";
+import {
+  buildOutboundTwiml,
+  createTwilioCall,
+  mapTwilioStatus,
+  parseDurationSeconds,
+  requireEnvVar,
+} from "./lib/telephony";
 import { assertRole, requireTeamMembership } from "./lib/teamAccess";
-
-function requireEnvVar(value: string | undefined, label: string) {
-  if (!value) {
-    throw new ConvexError(`${label} is not configured.`);
-  }
-
-  return value;
-}
-
-function mapTwilioStatus(status: string | null | undefined) {
-  switch (status) {
-    case "queued":
-    case "initiated":
-      return "initiated" as const;
-    case "ringing":
-      return "ringing" as const;
-    case "in-progress":
-      return "in_progress" as const;
-    case "completed":
-      return "completed" as const;
-    case "busy":
-      return "busy" as const;
-    case "no-answer":
-      return "no_answer" as const;
-    case "failed":
-      return "failed" as const;
-    case "canceled":
-      return "canceled" as const;
-    default:
-      return "initiated" as const;
-  }
-}
-
-function escapeXml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&apos;");
-}
 
 export const listSessions = query({
   args: {},
@@ -173,33 +139,14 @@ export const startOutboundCall = action({
     })) as Id<"phoneCallSessions">;
 
     const baseUrl = convexSiteUrl.replace(/\/$/, "");
-    const response = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Calls.json`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Basic ${btoa(`${accountSid}:${authToken}`)}`,
-          "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
-        },
-        body: new URLSearchParams({
-          To: sellerPhoneNumber,
-          From: outboundCallerId,
-          Url: `${baseUrl}/twilio/outbound/twiml?sessionId=${sessionId}`,
-          Method: "POST",
-          StatusCallback: `${baseUrl}/twilio/outbound/status?sessionId=${sessionId}&leg=seller`,
-          StatusCallbackMethod: "POST",
-          StatusCallbackEvent: "initiated ringing answered completed",
-          Record: "true",
-        }).toString(),
-      },
-    );
-
-    if (!response.ok) {
-      const body = await response.text();
-      throw new ConvexError(`Twilio call could not be started: ${body}`);
-    }
-
-    const twilioCall = (await response.json()) as { sid: string };
+    const twilioCall = await createTwilioCall({
+      accountSid,
+      authToken,
+      to: sellerPhoneNumber,
+      from: outboundCallerId,
+      twimlUrl: `${baseUrl}/twilio/outbound/twiml?sessionId=${sessionId}`,
+      statusCallbackUrl: `${baseUrl}/twilio/outbound/status?sessionId=${sessionId}&leg=seller`,
+    });
 
     await ctx.runMutation(internal.telephony.attachSellerCallSid, {
       sessionId,
@@ -404,21 +351,12 @@ export const outboundTwiml = httpAction(async (ctx, req) => {
     "TWILIO_CALLER_ID",
   );
 
-  const voiceResponse = `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Say>Connecting your VerbaScore call.</Say>
-  <Dial answerOnBridge="true" callerId="${escapeXml(
+  const voiceResponse = buildOutboundTwiml({
     outboundCallerId,
-  )}" record="record-from-answer-dual" recordingStatusCallback="${escapeXml(
-    `${convexSiteUrl}/twilio/outbound/recording?sessionId=${session._id}`,
-  )}" recordingStatusCallbackMethod="POST">
-    <Number statusCallback="${escapeXml(
-      `${convexSiteUrl}/twilio/outbound/status?sessionId=${session._id}&leg=client`,
-    )}" statusCallbackEvent="initiated ringing answered completed" statusCallbackMethod="POST">${escapeXml(
-    session.clientPhoneNumber,
-  )}</Number>
-  </Dial>
-</Response>`;
+    recordingCallbackUrl: `${convexSiteUrl}/twilio/outbound/recording?sessionId=${session._id}`,
+    clientStatusCallbackUrl: `${convexSiteUrl}/twilio/outbound/status?sessionId=${session._id}&leg=client`,
+    clientPhoneNumber: session.clientPhoneNumber,
+  });
 
   return new Response(voiceResponse, {
     status: 200,
@@ -438,11 +376,7 @@ export const outboundStatus = httpAction(async (ctx, req) => {
   }
 
   const formData = await req.formData();
-  const durationValue = formData.get("CallDuration");
-  const durationSeconds =
-    typeof durationValue === "string" && durationValue
-      ? Number.parseInt(durationValue, 10)
-      : undefined;
+  const durationSeconds = parseDurationSeconds(formData.get("CallDuration"));
 
   await ctx.runMutation(internal.telephony.applyStatusWebhook, {
     sessionId: sessionId as never,
