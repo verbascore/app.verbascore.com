@@ -6,33 +6,15 @@ import { DashboardRecentCalls } from "./dashboard-recent-calls";
 import { DashboardStatCards } from "./dashboard-stat-cards";
 import { DashboardStrengthsCard } from "./dashboard-strengths-card";
 import { DashboardTrendCard } from "./dashboard-trend-card";
-import { TeamWorkspaceCard } from "./team-workspace-card";
 import { HomeDashboardData } from "./types";
 
 export function SellerDashboardView({
   data,
-  teamTitle,
-  teamDescription,
-  memberCount,
-  role,
 }: {
   data: HomeDashboardData | undefined;
-  teamTitle: string;
-  teamDescription: string;
-  memberCount: number;
-  role: "owner" | "seller";
 }) {
   return (
     <>
-      <div className="mt-6">
-        <TeamWorkspaceCard
-          title={teamTitle}
-          description={teamDescription}
-          memberCount={memberCount}
-          role={role}
-        />
-      </div>
-
       {!data ? (
         <section className="mt-6 rounded-3xl border bg-card/80 p-6 text-sm text-muted-foreground shadow-sm">
           Loading dashboard...

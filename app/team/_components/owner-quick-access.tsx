@@ -58,16 +58,6 @@ export function OwnerQuickAccess({
           }
         />
 
-        <TeamCreateDialog
-          trigger={
-            <QuickAccessButton
-              icon={<Users2 className="size-5" />}
-              title="Create another team"
-              description="Spin up a new workspace and switch to it."
-            />
-          }
-        />
-
         <DeleteTeamDialog
           teamTitle={team.title}
           isDeleting={isDeleting}

@@ -43,20 +43,9 @@ export default function Page() {
     >
       <DashboardHeader />
       {workspace.membership.role === "owner" ? (
-        <OwnerDashboardView
-          data={data}
-          teamTitle={workspace.team.title}
-          teamDescription={workspace.team.description}
-          memberCount={workspace.members.length}
-        />
+        <OwnerDashboardView data={data} />
       ) : (
-        <SellerDashboardView
-          data={data}
-          teamTitle={workspace.team.title}
-          teamDescription={workspace.team.description}
-          memberCount={workspace.members.length}
-          role="seller"
-        />
+        <SellerDashboardView data={data} />
       )}
     </AppShell>
   );

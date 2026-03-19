@@ -79,10 +79,6 @@ export function TeamSidebarSwitcher() {
 
             <DropdownMenuSeparator />
 
-            <DropdownMenuItem onSelect={() => router.push("/team")}>
-              Manage team
-            </DropdownMenuItem>
-
             <TeamCreateDialog
               trigger={
                 <button className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-xs transition-colors hover:bg-accent hover:text-accent-foreground">
