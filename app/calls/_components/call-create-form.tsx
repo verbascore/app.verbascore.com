@@ -29,19 +29,8 @@ export function CallCreateForm({
   onCancel,
 }: CallCreateFormProps) {
   return (
-    <section className="mt-6 rounded-3xl border bg-card p-6 shadow-sm">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-            New Call
-          </p>
-          <h3 className="mt-2 text-lg font-semibold tracking-tight">
-            Create a call record
-          </h3>
-        </div>
-      </div>
-
-      <form className="mt-6 grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
+    <div>
+      <form className="mt-2 grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
         <label className="grid gap-2 md:col-span-2">
           <span className="text-sm font-medium">Title</span>
           <input
@@ -111,6 +100,6 @@ export function CallCreateForm({
           </button>
         </div>
       </form>
-    </section>
+    </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { FormEvent } from "react";
 
-import { CallCreateForm } from "./call-create-form";
+import { CallCreateDialog } from "./call-create-dialog";
 import { CallsHero } from "./calls-hero";
 import { CallsTable } from "./calls-table";
 import { CallRowData } from "./types";
@@ -46,22 +46,26 @@ export function SellerCallsView({
 }) {
   return (
     <>
-      <CallsHero />
+      <CallCreateDialog
+        open={isCreating}
+        onOpenChange={(open) => {
+          if (!open) {
+            onCancel();
+          }
+        }}
+        title={title}
+        description={description}
+        isSubmitting={isSubmitting}
+        error={error}
+        onTitleChange={onTitleChange}
+        onDescriptionChange={onDescriptionChange}
+        onSellerFileChange={onSellerFileChange}
+        onClientFileChange={onClientFileChange}
+        onSubmit={onSubmit}
+        onCancel={onCancel}
+      />
 
-      {isCreating ? (
-        <CallCreateForm
-          title={title}
-          description={description}
-          isSubmitting={isSubmitting}
-          error={error}
-          onTitleChange={onTitleChange}
-          onDescriptionChange={onDescriptionChange}
-          onSellerFileChange={onSellerFileChange}
-          onClientFileChange={onClientFileChange}
-          onSubmit={onSubmit}
-          onCancel={onCancel}
-        />
-      ) : null}
+      <CallsHero />
 
       {error ? (
         <section className="mt-6 rounded-3xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive shadow-sm">
