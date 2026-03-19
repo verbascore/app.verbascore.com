@@ -73,6 +73,9 @@ export default defineSchema({
     teamId: v.id("teams"),
     ownerUserId: v.string(),
     source: v.literal("twilio"),
+    callMode: v.optional(
+      v.union(v.literal("call_my_phone"), v.literal("call_in_app")),
+    ),
     platformOrigin: v.union(
       v.literal("ios"),
       v.literal("android"),
@@ -101,6 +104,11 @@ export default defineSchema({
     recordingSid: v.optional(v.string()),
     recordingUrl: v.optional(v.string()),
     recordingStatus: v.optional(v.string()),
+    recordingStorageId: v.optional(v.id("_storage")),
+    archivedCallId: v.optional(v.id("calls")),
+    recordingConsentAt: v.optional(v.number()),
+    recordingStartedAt: v.optional(v.number()),
+    recordingEndedAt: v.optional(v.number()),
     durationSeconds: v.optional(v.number()),
     answeredAt: v.optional(v.number()),
     endedAt: v.optional(v.number()),
@@ -112,6 +120,114 @@ export default defineSchema({
     .index("by_owner_updated_at", ["ownerUserId", "updatedAt"])
     .index("by_seller_call_sid", ["sellerCallSid"])
     .index("by_client_call_sid", ["clientCallSid"]),
+
+  crmOrganizations: defineTable({
+    teamId: v.id("teams"),
+    name: v.string(),
+    website: v.optional(v.string()),
+    industry: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    lifecycleStage: v.union(
+      v.literal("lead"),
+      v.literal("prospect"),
+      v.literal("customer"),
+      v.literal("former_customer"),
+    ),
+    ownerUserId: v.optional(v.string()),
+    externalSource: v.optional(v.string()),
+    externalId: v.optional(v.string()),
+    createdByUserId: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_team_updated_at", ["teamId", "updatedAt"])
+    .index("by_team_lifecycle", ["teamId", "lifecycleStage"])
+    .index("by_team_external", ["teamId", "externalSource"]),
+
+  crmContacts: defineTable({
+    teamId: v.id("teams"),
+    organizationId: v.optional(v.id("crmOrganizations")),
+    fullName: v.string(),
+    firstName: v.optional(v.string()),
+    lastName: v.optional(v.string()),
+    jobTitle: v.optional(v.string()),
+    email: v.optional(v.string()),
+    normalizedEmail: v.optional(v.string()),
+    phoneNumber: v.string(),
+    normalizedPhoneNumber: v.string(),
+    alternatePhoneNumber: v.optional(v.string()),
+    lifecycleStage: v.union(
+      v.literal("lead"),
+      v.literal("contacted"),
+      v.literal("qualified"),
+      v.literal("customer"),
+      v.literal("inactive"),
+    ),
+    source: v.union(
+      v.literal("manual"),
+      v.literal("call"),
+      v.literal("import"),
+      v.literal("integration"),
+    ),
+    notes: v.optional(v.string()),
+    tags: v.array(v.string()),
+    assignedUserId: v.optional(v.string()),
+    createdByUserId: v.string(),
+    lastContactedAt: v.optional(v.number()),
+    externalSource: v.optional(v.string()),
+    externalId: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_team_updated_at", ["teamId", "updatedAt"])
+    .index("by_team_phone", ["teamId", "normalizedPhoneNumber"])
+    .index("by_team_email", ["teamId", "normalizedEmail"])
+    .index("by_team_lifecycle", ["teamId", "lifecycleStage"])
+    .index("by_team_organization", ["teamId", "organizationId"])
+    .index("by_team_external", ["teamId", "externalSource"]),
+
+  crmActivities: defineTable({
+    teamId: v.id("teams"),
+    contactId: v.optional(v.id("crmContacts")),
+    organizationId: v.optional(v.id("crmOrganizations")),
+    kind: v.union(
+      v.literal("note"),
+      v.literal("call"),
+      v.literal("email"),
+      v.literal("meeting"),
+      v.literal("sync"),
+    ),
+    summary: v.string(),
+    details: v.optional(v.string()),
+    createdByUserId: v.string(),
+    externalSource: v.optional(v.string()),
+    externalId: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_team_created_at", ["teamId", "createdAt"])
+    .index("by_contact_created_at", ["contactId", "createdAt"])
+    .index("by_organization_created_at", ["organizationId", "createdAt"]),
+
+  crmSyncConnections: defineTable({
+    teamId: v.id("teams"),
+    provider: v.string(),
+    displayName: v.string(),
+    status: v.union(
+      v.literal("active"),
+      v.literal("needs_attention"),
+      v.literal("disabled"),
+    ),
+    externalAccountId: v.optional(v.string()),
+    scopes: v.array(v.string()),
+    metadataJson: v.optional(v.string()),
+    lastSyncedAt: v.optional(v.number()),
+    createdByUserId: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_team_updated_at", ["teamId", "updatedAt"])
+    .index("by_team_provider", ["teamId", "provider"]),
 
   callAnalyses: defineTable({
     teamId: v.id("teams"),

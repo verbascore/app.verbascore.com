@@ -11,6 +11,7 @@
 import type * as analytics from "../analytics.js";
 import type * as callAnalysis from "../callAnalysis.js";
 import type * as calls from "../calls.js";
+import type * as crm from "../crm.js";
 import type * as dashboard from "../dashboard.js";
 import type * as feedback from "../feedback.js";
 import type * as http from "../http.js";
@@ -31,6 +32,7 @@ declare const fullApi: ApiFromModules<{
   analytics: typeof analytics;
   callAnalysis: typeof callAnalysis;
   calls: typeof calls;
+  crm: typeof crm;
   dashboard: typeof dashboard;
   feedback: typeof feedback;
   http: typeof http;

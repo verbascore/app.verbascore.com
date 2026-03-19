@@ -26,6 +26,7 @@ export default function TeamPage() {
   );
   const revokeInvitation = useMutation(api.teams.revokeInvitation);
   const updateMemberRole = useMutation(api.teams.updateMemberRole);
+  const setMemberPhoneNumber = useMutation(api.teams.setMemberPhoneNumber);
   const removeMember = useMutation(api.teams.removeMember);
   const deleteTeam = useMutation(api.teams.deleteTeam);
 
@@ -187,6 +188,22 @@ export default function TeamPage() {
     }
   }
 
+  async function handlePhoneNumberChange(memberId: string, phoneNumber: string) {
+    try {
+      setError(null);
+      await setMemberPhoneNumber({
+        memberId: memberId as never,
+        phoneNumber: phoneNumber || undefined,
+      });
+    } catch (phoneError) {
+      setError(
+        phoneError instanceof Error
+          ? phoneError.message
+          : "Failed to update seller phone number.",
+      );
+    }
+  }
+
   async function handleDeleteTeam() {
     try {
       setIsDeleting(true);
@@ -217,6 +234,7 @@ export default function TeamPage() {
     memberPageCount,
     onMembersPageChange: setMembersPage,
     onRoleChange: handleRoleChange,
+    onPhoneNumberChange: handlePhoneNumberChange,
     onRemoveMember: handleRemove,
   };
 

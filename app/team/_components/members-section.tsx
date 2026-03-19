@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -25,6 +27,7 @@ export function MembersSection({
   onPageChange,
   canManageMembers,
   onRoleChange,
+  onPhoneNumberChange,
   onRemoveMember,
 }: {
   membership: TeamMembership;
@@ -37,8 +40,19 @@ export function MembersSection({
   onPageChange: (page: number) => void;
   canManageMembers: boolean;
   onRoleChange?: (memberId: string, role: "owner" | "seller") => Promise<void>;
+  onPhoneNumberChange?: (memberId: string, phoneNumber: string) => Promise<void>;
   onRemoveMember?: (memberId: string, label: string) => Promise<void>;
 }) {
+  const [phoneDrafts, setPhoneDrafts] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    setPhoneDrafts(
+      Object.fromEntries(
+        members.map((member) => [member._id, member.phoneNumber ?? ""]),
+      ),
+    );
+  }, [members]);
+
   return (
     <section className="py-8">
       <div className="flex flex-col gap-4 border-b pb-4 md:flex-row md:items-end md:justify-between">
@@ -62,6 +76,7 @@ export function MembersSection({
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Email / User</TableHead>
+              <TableHead>Seller phone</TableHead>
               <TableHead>Role</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -70,7 +85,7 @@ export function MembersSection({
             {members.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={4}
+                  colSpan={5}
                   className="py-8 text-center text-sm text-muted-foreground"
                 >
                   {filteredMembersCount === 0
@@ -91,6 +106,39 @@ export function MembersSection({
                     <TableCell className="font-medium">{label}</TableCell>
                     <TableCell className="max-w-[280px] truncate">
                       {member.email || member.userId}
+                    </TableCell>
+                    <TableCell className="min-w-[220px]">
+                      {canManageMembers && member.role === "seller" ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            value={phoneDrafts[member._id] ?? ""}
+                            onChange={(event) =>
+                              setPhoneDrafts((current) => ({
+                                ...current,
+                                [member._id]: event.target.value,
+                              }))
+                            }
+                            placeholder="Assign phone number"
+                            className="h-9 w-full rounded-lg border bg-background px-3 text-sm"
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              onPhoneNumberChange?.(
+                                member._id,
+                                (phoneDrafts[member._id] ?? "").trim(),
+                              )
+                            }
+                          >
+                            Save
+                          </Button>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">
+                          {member.phoneNumber || "Not assigned"}
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell>
                       {canEditRole ? (

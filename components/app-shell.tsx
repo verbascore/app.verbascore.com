@@ -12,6 +12,7 @@ import {
   MessageSquareQuote,
   Phone,
   PhoneCall,
+  Rows3,
   Users2,
 } from "lucide-react";
 
@@ -39,6 +40,11 @@ const baseNavigationItems = [
     title: "Dashboard",
     href: "/",
     icon: LayoutDashboard,
+  },
+  {
+    title: "CRM",
+    href: "/crm",
+    icon: Rows3,
   },
   {
     title: "Sales Calls",
@@ -127,12 +133,13 @@ export function AppShell({
                   {(workspaceRole === "seller"
                     ? [
                         baseNavigationItems[0],
+                        baseNavigationItems[1],
                         {
                           title: "Phone",
                           href: "/phone",
                           icon: Phone,
                         },
-                        ...baseNavigationItems.slice(1),
+                        ...baseNavigationItems.slice(2),
                       ]
                     : baseNavigationItems
                   ).map((item) => {

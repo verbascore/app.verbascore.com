@@ -16,6 +16,7 @@ export type TeamMember = {
   role: "owner" | "seller";
   name?: string | null;
   email?: string | null;
+  phoneNumber?: string | null;
 };
 
 export type TeamInvitation = {

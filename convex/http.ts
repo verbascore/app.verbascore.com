@@ -1,6 +1,7 @@
 import { httpRouter } from "convex/server";
 
 import {
+  clientOutboundTwiml,
   outboundRecording,
   outboundStatus,
   outboundTwiml,
@@ -12,6 +13,12 @@ http.route({
   path: "/twilio/outbound/twiml",
   method: "POST",
   handler: outboundTwiml,
+});
+
+http.route({
+  path: "/twilio/client/outbound/twiml",
+  method: "POST",
+  handler: clientOutboundTwiml,
 });
 
 http.route({

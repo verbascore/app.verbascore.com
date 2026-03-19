@@ -25,6 +25,7 @@ export function OwnerTeamView({
   memberPageCount,
   onMembersPageChange,
   onRoleChange,
+  onPhoneNumberChange,
   onRemoveMember,
   invitations,
   filteredInvitationsCount,
@@ -52,6 +53,7 @@ export function OwnerTeamView({
   memberPageCount: number;
   onMembersPageChange: (page: number) => void;
   onRoleChange: (memberId: string, role: "owner" | "seller") => Promise<void>;
+  onPhoneNumberChange: (memberId: string, phoneNumber: string) => Promise<void>;
   onRemoveMember: (memberId: string, label: string) => Promise<void>;
   invitations: TeamInvitation[];
   filteredInvitationsCount: number;
@@ -98,6 +100,7 @@ export function OwnerTeamView({
         onPageChange={onMembersPageChange}
         canManageMembers
         onRoleChange={onRoleChange}
+        onPhoneNumberChange={onPhoneNumberChange}
         onRemoveMember={onRemoveMember}
       />
     </>

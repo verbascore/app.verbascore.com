@@ -191,20 +191,43 @@ export const updateTeam = mutation({
 
 export const updateCurrentUserProfile = mutation({
   args: {
-    phoneNumber: v.string(),
+    phoneNumber: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await requireIdentity(ctx);
-    const phoneNumber = args.phoneNumber.trim();
+    await upsertUserProfile({
+      ctx,
+      userId: identity.subject,
+      phoneNumber:
+        args.phoneNumber === undefined ? undefined : args.phoneNumber.trim() || undefined,
+    });
+  },
+});
 
-    if (!phoneNumber) {
-      throw new ConvexError("Phone number is required.");
+export const setMemberPhoneNumber = mutation({
+  args: {
+    memberId: v.id("teamMembers"),
+    phoneNumber: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { membership } = await requireTeamMembership(ctx);
+    assertRole(membership, ["owner"]);
+
+    const member = await ctx.db.get(args.memberId);
+
+    if (!member || member.teamId !== membership.teamId) {
+      throw new ConvexError("Member not found");
+    }
+
+    if (member.role !== "seller") {
+      throw new ConvexError("Phone numbers can only be assigned to seller members.");
     }
 
     await upsertUserProfile({
       ctx,
-      userId: identity.subject,
-      phoneNumber,
+      userId: member.userId,
+      phoneNumber:
+        args.phoneNumber === undefined ? undefined : args.phoneNumber.trim() || undefined,
     });
   },
 });
@@ -423,6 +446,23 @@ export const getTeamManagementData = query({
         .collect(),
     ]);
 
+    const profilesByUserId = new Map(
+      (
+        await Promise.all(
+          members.map(async (member) => {
+            const profile = await ctx.db
+              .query("userProfiles")
+              .withIndex("by_user", (q) => q.eq("userId", member.userId))
+              .first();
+
+            return profile ? [member.userId, profile] : null;
+          }),
+        )
+      ).filter(Boolean) as Array<
+        [string, { _id: string; phoneNumber?: string | undefined }]
+      >,
+    );
+
     return {
       team,
       membership,
@@ -434,7 +474,10 @@ export const getTeamManagementData = query({
         return (a.name ?? a.email ?? a.userId).localeCompare(
           b.name ?? b.email ?? b.userId,
         );
-      }),
+      }).map((member) => ({
+        ...member,
+        phoneNumber: profilesByUserId.get(member.userId)?.phoneNumber,
+      })),
       invitations: invitations.sort((a, b) => b.createdAt - a.createdAt),
     };
   },

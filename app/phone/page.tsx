@@ -1,16 +1,23 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
-import { useAction, useMutation, useQuery } from "convex/react";
+import { useRef, useState, type FormEvent } from "react";
+import { useAction, useQuery } from "convex/react";
 
 import { CurrentSessionPanel } from "@/app/phone/_components/current-session-panel";
 import { DeviceHandoffCard } from "@/app/phone/_components/device-handoff-card";
 import { StartSessionForm } from "@/app/phone/_components/start-session-form";
 import type { CurrentSession } from "@/app/phone/_components/types";
-import { WebPhonePopup } from "@/app/phone/_components/web-phone-popup";
 import { AppShell } from "@/components/app-shell";
 import { TeamEmptyState } from "@/components/team-empty-state";
 import { api } from "@/convex/_generated/api";
+
+function openPhoneWindow() {
+  return window.open(
+    "/phone/window",
+    "verbascore-phone-window",
+    "popup=yes,width=420,height=780,resizable=yes,scrollbars=no",
+  );
+}
 
 export default function PhonePage() {
   const workspace = useQuery(api.teams.getCurrentWorkspace);
@@ -19,43 +26,51 @@ export default function PhonePage() {
     workspace?.team && workspace?.membership?.role === "seller" ? {} : "skip",
   ) as CurrentSession | null | undefined;
   const startOutboundCall = useAction(api.telephony.startOutboundCall);
-  const setSessionHandler = useMutation(api.telephony.setSessionHandler);
+  const startInAppCallSession = useAction(api.telephony.startInAppCallSession);
+  const controlSession = useAction(api.telephony.controlSession);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [clientPhoneNumber, setClientPhoneNumber] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSwitching, setIsSwitching] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const showWebPhonePopup = useMemo(
-    () =>
-      Boolean(
-        currentSession &&
-          ["draft", "initiated", "ringing", "in_progress"].includes(
-            currentSession.status,
-          ) &&
-          currentSession.handledBy === "web",
-      ),
-    [currentSession],
+  const [callMode, setCallMode] = useState<"call_my_phone" | "call_in_app">(
+    "call_my_phone",
   );
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isTakingControl, setIsTakingControl] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const popupRef = useRef<Window | null>(null);
 
   async function handleStartSession(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    const popupWindow = openPhoneWindow();
+    popupRef.current = popupWindow;
+
     try {
       setIsSubmitting(true);
       setError(null);
-      await startOutboundCall({
-        title: title.trim(),
-        description: description.trim(),
-        clientPhoneNumber: clientPhoneNumber.trim(),
-        platformOrigin: "web",
-      });
+      if (callMode === "call_in_app") {
+        const result = await startInAppCallSession({
+          title: title.trim(),
+          description: description.trim(),
+          clientPhoneNumber: clientPhoneNumber.trim(),
+        });
+        popupWindow!.location.href = `/phone/window?mode=call_in_app&sessionId=${String(
+          result.sessionId,
+        )}`;
+      } else {
+        await startOutboundCall({
+          title: title.trim(),
+          description: description.trim(),
+          clientPhoneNumber: clientPhoneNumber.trim(),
+          platformOrigin: "web",
+        });
+      }
       setTitle("");
       setDescription("");
       setClientPhoneNumber("");
     } catch (sessionError) {
+      popupWindow?.close();
       setError(
         sessionError instanceof Error
           ? sessionError.message
@@ -66,27 +81,27 @@ export default function PhonePage() {
     }
   }
 
-  async function handleSwitchDevice(handledBy: "web" | "mobile") {
+  async function handleTakeControlOnWeb() {
     if (!currentSession) {
       return;
     }
 
     try {
-      setIsSwitching(true);
+      setIsTakingControl(true);
       setError(null);
-      await setSessionHandler({
+      await controlSession({
         sessionId: currentSession._id as never,
-        handledBy,
-        handlerLabel: handledBy === "web" ? "Web" : "Mobile",
+        action: "take_web",
       });
-    } catch (switchError) {
+      popupRef.current = openPhoneWindow();
+    } catch (takeoverError) {
       setError(
-        switchError instanceof Error
-          ? switchError.message
-          : "Unable to switch the session device.",
+        takeoverError instanceof Error
+          ? takeoverError.message
+          : "Unable to take control on web.",
       );
     } finally {
-      setIsSwitching(false);
+      setIsTakingControl(false);
     }
   }
 
@@ -145,14 +160,26 @@ export default function PhonePage() {
             {currentSession ? (
               <CurrentSessionPanel
                 currentSession={currentSession}
-                isSwitching={isSwitching}
-                onSwitchDevice={(handledBy) => void handleSwitchDevice(handledBy)}
+                onOpenPhoneWindow={() => {
+                  const popupWindow = popupRef.current;
+
+                  if (!popupWindow || popupWindow.closed) {
+                    popupRef.current = openPhoneWindow();
+                    return;
+                  }
+
+                  popupWindow.focus();
+                }}
+                onTakeControlOnWeb={() => void handleTakeControlOnWeb()}
+                takingControl={isTakingControl}
               />
             ) : (
               <StartSessionForm
                 title={title}
                 description={description}
                 clientPhoneNumber={clientPhoneNumber}
+                callMode={callMode}
+                onCallModeChange={setCallMode}
                 onTitleChange={setTitle}
                 onDescriptionChange={setDescription}
                 onClientPhoneNumberChange={setClientPhoneNumber}
@@ -167,13 +194,6 @@ export default function PhonePage() {
 
         <DeviceHandoffCard />
       </div>
-
-      {showWebPhonePopup && currentSession ? (
-        <WebPhonePopup
-          currentSession={currentSession}
-          onSendToMobile={() => void handleSwitchDevice("mobile")}
-        />
-      ) : null}
     </AppShell>
   );
 }

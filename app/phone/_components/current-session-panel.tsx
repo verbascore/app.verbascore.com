@@ -1,18 +1,18 @@
 "use client";
 
-import { MonitorSmartphone, Smartphone } from "lucide-react";
-
 import type { CurrentSession } from "@/app/phone/_components/types";
 import { formatStatus } from "@/app/phone/_components/utils";
 
 export function CurrentSessionPanel({
   currentSession,
-  isSwitching,
-  onSwitchDevice,
+  onOpenPhoneWindow,
+  onTakeControlOnWeb,
+  takingControl,
 }: {
   currentSession: CurrentSession;
-  isSwitching: boolean;
-  onSwitchDevice: (handledBy: "web" | "mobile") => void;
+  onOpenPhoneWindow?: () => void;
+  onTakeControlOnWeb?: () => void;
+  takingControl?: boolean;
 }) {
   return (
     <div className="rounded-3xl border bg-background/80 p-5 shadow-sm">
@@ -50,25 +50,6 @@ export function CurrentSessionPanel({
         </div>
       </div>
 
-      <div className="mt-5 flex flex-wrap gap-3">
-        <button
-          onClick={() => onSwitchDevice("web")}
-          disabled={isSwitching || currentSession.handledBy === "web"}
-          className="inline-flex h-11 items-center gap-2 rounded-2xl border bg-background px-4 text-sm font-medium transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <MonitorSmartphone className="size-4" />
-          Handle on web
-        </button>
-        <button
-          onClick={() => onSwitchDevice("mobile")}
-          disabled={isSwitching || currentSession.handledBy === "mobile"}
-          className="inline-flex h-11 items-center gap-2 rounded-2xl border bg-background px-4 text-sm font-medium transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <Smartphone className="size-4" />
-          Move to mobile
-        </button>
-      </div>
-
       <p className="mt-4 text-sm text-muted-foreground">
         Currently handled by{" "}
         <span className="font-medium text-foreground">
@@ -76,6 +57,31 @@ export function CurrentSessionPanel({
         </span>
         .
       </p>
+
+      {currentSession.handledBy === "web" && onOpenPhoneWindow ? (
+        <div className="mt-5">
+          <button
+            onClick={onOpenPhoneWindow}
+            className="inline-flex h-11 items-center gap-2 rounded-2xl border bg-background px-4 text-sm font-medium transition-colors hover:bg-accent"
+          >
+            Open call window
+          </button>
+        </div>
+      ) : currentSession.handledBy === "mobile" && onTakeControlOnWeb ? (
+        <div className="mt-5">
+          <button
+            onClick={onTakeControlOnWeb}
+            disabled={takingControl}
+            className="inline-flex h-11 items-center gap-2 rounded-2xl border bg-background px-4 text-sm font-medium transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {takingControl ? "Taking control..." : "Take control on web"}
+          </button>
+        </div>
+      ) : (
+        <p className="mt-5 text-sm text-muted-foreground">
+          Use the mobile app to move this session between phone and web.
+        </p>
+      )}
     </div>
   );
 }
