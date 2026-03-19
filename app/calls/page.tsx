@@ -66,24 +66,6 @@ export default function CallsPage() {
     return calls.filter((call) => call.ownerUserId === workspace.membership.userId);
   }, [calls, selectedSeller, sellerOptions, workspace?.membership]);
   const hasCalls = useMemo(() => (visibleCalls ?? []).length > 0, [visibleCalls]);
-  const callSummary = useMemo(() => {
-    const items = visibleCalls ?? [];
-    const analyzedCalls = items.filter((call) => call.analysis);
-    const averageScore = analyzedCalls.length
-      ? Math.round(
-          analyzedCalls.reduce(
-            (total, call) => total + (call.analysis?.overallRating ?? 0),
-            0,
-          ) / analyzedCalls.length,
-        )
-      : null;
-
-    return {
-      totalCalls: items.length,
-      analyzedCalls: analyzedCalls.length,
-      averageScore,
-    };
-  }, [visibleCalls]);
 
   async function handleCreateCall(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -205,9 +187,6 @@ export default function CallsPage() {
           selectedSeller={selectedSeller}
           onSelectedSellerChange={setSelectedSeller}
           sellerOptions={sellerOptions}
-          totalCalls={callSummary.totalCalls}
-          analyzedCalls={callSummary.analyzedCalls}
-          averageScore={callSummary.averageScore}
           error={error}
           calls={visibleCalls as CallRowData[] | undefined}
           hasCalls={hasCalls}

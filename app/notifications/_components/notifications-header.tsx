@@ -1,5 +1,7 @@
 "use client";
 
+import { PageHeader } from "@/components/page-header";
+
 import { NotificationLevel } from "./types";
 
 type NotificationsHeaderProps = {
@@ -19,13 +21,12 @@ export function NotificationsHeader({
   ];
 
   return (
-    <section>
-      <h2 className="text-lg font-semibold tracking-tight">Notifications</h2>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Stay updated on your performance alerts
-      </p>
-
-      <div className="mt-6 inline-flex rounded-2xl border bg-card/70 p-1">
+    <PageHeader
+      eyebrow="Alerts"
+      title="Notifications"
+      description="Stay on top of analysis alerts, coaching signals, and important activity across the workspace."
+    >
+      <div className="inline-flex rounded-2xl border bg-card/70 p-1">
         {filters.map((item) => (
           <button
             key={item}
@@ -41,6 +42,6 @@ export function NotificationsHeader({
           </button>
         ))}
       </div>
-    </section>
+    </PageHeader>
   );
 }

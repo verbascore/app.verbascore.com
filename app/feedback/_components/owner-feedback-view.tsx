@@ -2,6 +2,7 @@
 
 import { SellerScopeSelector } from "@/components/seller-scope-selector";
 
+import { OwnerFeedbackEmptyState } from "./owner-feedback-empty-state";
 import { SellerFeedbackView } from "./seller-feedback-view";
 import { FeedbackDashboardSlice, SellerOption } from "./types";
 
@@ -21,11 +22,8 @@ export function OwnerFeedbackView({
   sellerOptions: SellerOption[];
 }) {
   return (
-    <SellerFeedbackView
-      data={data}
-      selectedIndex={selectedIndex}
-      onSelectIndex={onSelectIndex}
-      scopeControl={
+    <>
+      <div className="mb-6 flex justify-start">
         <SellerScopeSelector
           label="Seller"
           value={selectedSeller}
@@ -33,7 +31,15 @@ export function OwnerFeedbackView({
           sellers={sellerOptions}
           averageLabel="Average across sellers"
         />
-      }
-    />
+      </div>
+      <SellerFeedbackView
+        data={data}
+        selectedIndex={selectedIndex}
+        onSelectIndex={onSelectIndex}
+        emptyState={
+          <OwnerFeedbackEmptyState selectedSeller={selectedSeller} />
+        }
+      />
+    </>
   );
 }

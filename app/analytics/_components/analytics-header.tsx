@@ -1,20 +1,17 @@
 "use client";
 
-import { ReactNode } from "react";
-
+import { PageHeader } from "@/components/page-header";
 import { MetricKey } from "./types";
 import { metricMeta } from "./utils";
 
 type AnalyticsHeaderProps = {
   metric: MetricKey;
   onMetricChange: (metric: MetricKey) => void;
-  scopeControl?: ReactNode;
 };
 
 export function AnalyticsHeader({
   metric,
   onMetricChange,
-  scopeControl,
 }: AnalyticsHeaderProps) {
   const metrics: MetricKey[] = [
     "overallRating",
@@ -26,20 +23,12 @@ export function AnalyticsHeader({
   ];
 
   return (
-    <section className="rounded-3xl border bg-card/90 p-6 shadow-sm backdrop-blur">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-sm text-muted-foreground">
-            Deep dive into your performance metrics
-          </p>
-          <h2 className="mt-2 text-lg font-semibold tracking-tight">
-            Analytics
-          </h2>
-        </div>
-
-        <div className="flex flex-col items-start gap-3 lg:items-end">
-          {scopeControl}
-          <div className="flex flex-wrap gap-2">
+    <PageHeader
+      eyebrow="Performance"
+      title="Analytics"
+      description="Compare score trends, conversion signals, and objection patterns over time across your shared call history."
+    >
+      <div className="flex flex-wrap gap-2">
           {metrics.map((item) => (
             <button
               key={item}
@@ -54,9 +43,7 @@ export function AnalyticsHeader({
               {metricMeta[item].label}
             </button>
           ))}
-          </div>
-        </div>
       </div>
-    </section>
+    </PageHeader>
   );
 }

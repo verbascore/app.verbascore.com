@@ -2,6 +2,7 @@
 
 import { SellerScopeSelector } from "@/components/seller-scope-selector";
 
+import { OwnerAnalyticsEmptyState } from "./owner-analytics-empty-state";
 import { SellerAnalyticsView } from "./seller-analytics-view";
 import {
   AnalyticsDashboardSlice,
@@ -29,13 +30,8 @@ export function OwnerAnalyticsView({
   sellerOptions: SellerOption[];
 }) {
   return (
-    <SellerAnalyticsView
-      data={data}
-      selectedMetric={selectedMetric}
-      onMetricChange={onMetricChange}
-      selectedIndex={selectedIndex}
-      onSelectIndex={onSelectIndex}
-      scopeControl={
+    <>
+      <div className="mb-6 flex justify-start">
         <SellerScopeSelector
           label="Seller"
           value={selectedSeller}
@@ -43,7 +39,17 @@ export function OwnerAnalyticsView({
           sellers={sellerOptions}
           averageLabel="Average across sellers"
         />
-      }
-    />
+      </div>
+      <SellerAnalyticsView
+        data={data}
+        selectedMetric={selectedMetric}
+        onMetricChange={onMetricChange}
+        selectedIndex={selectedIndex}
+        onSelectIndex={onSelectIndex}
+        emptyState={
+          <OwnerAnalyticsEmptyState selectedSeller={selectedSeller} />
+        }
+      />
+    </>
   );
 }

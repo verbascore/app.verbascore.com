@@ -14,19 +14,19 @@ export function SellerFeedbackView({
   data,
   selectedIndex,
   onSelectIndex,
-  scopeControl,
+  emptyState,
 }: {
   data: FeedbackDashboardSlice | null;
   selectedIndex: number;
   onSelectIndex: (index: number) => void;
-  scopeControl?: ReactNode;
+  emptyState?: ReactNode;
 }) {
   const snapshots = data?.snapshots ?? [];
   const snapshot = snapshots[Math.min(selectedIndex, Math.max(snapshots.length - 1, 0))];
 
   return (
     <>
-      <FeedbackHeader scopeControl={scopeControl} />
+      <FeedbackHeader />
 
       {data?.activePendingAnalysis ? (
         <FeedbackPendingBanner activePendingAnalysis={data.activePendingAnalysis} />
@@ -37,7 +37,7 @@ export function SellerFeedbackView({
           Loading feedback...
         </section>
       ) : snapshots.length === 0 ? (
-        <FeedbackEmptyState />
+        emptyState ?? <FeedbackEmptyState />
       ) : snapshot ? (
         <>
           <FeedbackHistoryNav

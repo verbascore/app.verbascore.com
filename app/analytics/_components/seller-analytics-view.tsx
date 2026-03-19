@@ -18,25 +18,21 @@ export function SellerAnalyticsView({
   onMetricChange,
   selectedIndex,
   onSelectIndex,
-  scopeControl,
+  emptyState,
 }: {
   data: AnalyticsDashboardSlice | null;
   selectedMetric: MetricKey;
   onMetricChange: (metric: MetricKey) => void;
   selectedIndex: number;
   onSelectIndex: (index: number) => void;
-  scopeControl?: ReactNode;
+  emptyState?: ReactNode;
 }) {
   const snapshots = data?.snapshots ?? [];
   const snapshot = snapshots[Math.min(selectedIndex, Math.max(snapshots.length - 1, 0))];
 
   return (
     <>
-      <AnalyticsHeader
-        metric={selectedMetric}
-        onMetricChange={onMetricChange}
-        scopeControl={scopeControl}
-      />
+      <AnalyticsHeader metric={selectedMetric} onMetricChange={onMetricChange} />
 
       {data?.activePendingAnalysis ? (
         <PendingBanner activePendingAnalysis={data.activePendingAnalysis} />
@@ -47,7 +43,7 @@ export function SellerAnalyticsView({
           Loading analytics...
         </section>
       ) : snapshots.length === 0 ? (
-        <AnalyticsEmptyState />
+        emptyState ?? <AnalyticsEmptyState />
       ) : snapshot ? (
         <>
           <HistoryNav

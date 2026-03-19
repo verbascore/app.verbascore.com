@@ -236,33 +236,6 @@ export default function TeamPage() {
         />
       }
     >
-      <section className="mb-6 rounded-3xl border bg-card/80 p-5 shadow-sm">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-              <ShieldCheck className="size-3.5" />
-              {membership.role}
-            </div>
-            <h1 className="text-2xl font-semibold tracking-tight">{team.title}</h1>
-            <p className="max-w-2xl text-sm text-muted-foreground">
-              Manage team access, invitations, and workspace ownership for everyone
-              collaborating here.
-            </p>
-          </div>
-
-          <div className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
-            <div className="inline-flex items-center gap-2 rounded-2xl border px-4 py-3">
-              <Mail className="size-4" />
-              Invitation links are email-scoped
-            </div>
-            <div className="inline-flex items-center gap-2 rounded-2xl border px-4 py-3">
-              <Link2 className="size-4" />
-              Accepted invites switch users into this team
-            </div>
-          </div>
-        </div>
-      </section>
-
       <div className="mx-auto max-w-6xl">
         {membership.role === "owner" ? (
           <OwnerTeamView
