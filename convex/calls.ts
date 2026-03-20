@@ -13,6 +13,7 @@ import {
   assertTeamAccess,
   requireTeamMembership,
 } from "./lib/teamAccess";
+import { TranscriptionStatementSchema } from "./lib/transcriber/types";
 
 function clampScore(score: number, label: string) {
   if (score < 0 || score > 100) {
@@ -59,9 +60,7 @@ export const listCalls = query({
     const { membership } = await requireTeamMembership(ctx);
     const calls = await ctx.db
       .query("calls")
-      .withIndex("by_team_updated_at", (q) =>
-        q.eq("teamId", membership.teamId),
-      )
+      .withIndex("by_team_updated_at", (q) => q.eq("teamId", membership.teamId))
       .order("desc")
       .collect();
 
@@ -327,6 +326,15 @@ export const updatePendingAnalysis = internalMutation({
   },
 });
 
+export const getPendingAnalysisTranscripts = internalQuery({
+  args: {
+    pendingAnalysisId: v.id("pending_analysis"),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.pendingAnalysisId);
+  },
+});
+
 export const completeAnalysis = internalMutation({
   args: {
     pendingAnalysisId: v.id("pending_analysis"),
@@ -467,5 +475,55 @@ export const completeAnalysis = internalMutation({
     });
 
     return callAnalysisId;
+  },
+});
+
+export const saveSonioxTranscript = internalMutation({
+  args: {
+    ownerUserId: v.string(),
+    teamId: v.id("teams"),
+    callId: v.id("calls"),
+    channel: v.union(v.literal("seller"), v.literal("client")),
+    sentenceTokens: v.array(v.object(TranscriptionStatementSchema)),
+  },
+  handler: async (ctx, args) => {
+    // If there is no pending analysis, this was called by mistake
+    const pendingAnalysis = await ctx.db
+      .query("pending_analysis")
+      .withIndex("by_call", (q) => q.eq("callId", args.callId))
+      .first();
+    if (!pendingAnalysis) return;
+
+    // Update the corresponding field whenever we get a transcript from the webhook
+    const patch: Record<string, any> = {
+      updatedAt: Date.now(),
+      progress: pendingAnalysis.progress + 20,
+      currentStep: `Waiting for ${args.channel === "seller" ? "client" : "seller"} transcript...`,
+    };
+
+    if (args.channel === "seller")
+      patch.sellerTranscriptRaw = args.sentenceTokens;
+    else patch.clientTranscriptRaw = args.sentenceTokens;
+
+    await ctx.db.patch(pendingAnalysis._id, patch);
+
+    // Did we get both channels?
+    const updatedPending = await ctx.db.get(pendingAnalysis._id);
+    if (
+      updatedPending?.sellerTranscriptRaw &&
+      updatedPending?.clientTranscriptRaw
+    ) {
+      await ctx.db.patch(pendingAnalysis._id, {
+        currentStep: "Generating AI Analysis",
+        progress: 80,
+      });
+
+      await ctx.scheduler.runAfter(0, internal.callAnalysis.runAiAnalysis, {
+        ownerUserId: args.ownerUserId,
+        teamId: args.teamId,
+        callId: args.callId,
+        pendingAnalysisId: pendingAnalysis._id,
+      });
+    }
   },
 });

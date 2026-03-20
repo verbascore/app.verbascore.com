@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { TranscriptionStatementSchema } from "./lib/transcriber/types";
 
 export default defineSchema({
   userProfiles: defineTable({
@@ -259,6 +260,12 @@ export default defineSchema({
     progress: v.number(),
     currentStep: v.string(),
     errorMessage: v.optional(v.string()),
+    sellerTranscriptRaw: v.optional(
+      v.array(v.object(TranscriptionStatementSchema)),
+    ),
+    clientTranscriptRaw: v.optional(
+      v.array(v.object(TranscriptionStatementSchema)),
+    ),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

@@ -3,6 +3,11 @@
 import { internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
+import {
+  createTranscription,
+  getTranscriptionOptions,
+} from "./lib/transcriber/transcriber";
+import { TranscriptionStatement } from "./lib/transcriber/types";
 
 function requireEnv(name: string) {
   const value = process.env[name];
@@ -14,70 +19,18 @@ function requireEnv(name: string) {
   return value;
 }
 
-async function transcribeAudio(audioUrl: string, filename: string) {
-  const audioResponse = await fetch(audioUrl);
+export async function transcribeAudio(
+  audioUrl: string,
+  clientReferenceId: string,
+): Promise<string> {
+  const options = getTranscriptionOptions(audioUrl, clientReferenceId);
+  const transcriptionId = await createTranscription(options);
 
-  if (!audioResponse.ok) {
-    throw new Error(`Failed to fetch ${filename} audio`);
-  }
+  if (!transcriptionId)
+    throw new Error(`Failed to start transcription for ${clientReferenceId}`);
 
-  const audioBlob = await audioResponse.blob();
-  const formData = new FormData();
-  formData.append("model", "gpt-4o-mini-transcribe");
-  formData.append("response_format", "json");
-  formData.append(
-    "file",
-    new File([audioBlob], filename, { type: "audio/mpeg" }),
-  );
-
-  const transcriptionResponse = await fetch(
-    "https://api.openai.com/v1/audio/transcriptions",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${requireEnv("OPENAI_API_KEY")}`,
-      },
-      body: formData,
-    },
-  );
-
-  if (!transcriptionResponse.ok) {
-    throw new Error(await transcriptionResponse.text());
-  }
-
-  return (await transcriptionResponse.json()) as {
-    text?: string;
-    segments?: Array<{
-      start?: number;
-      end?: number;
-      text?: string;
-    }>;
-  };
-}
-
-function buildPrompt(args: {
-  title: string;
-  description?: string;
-  sellerTranscript: {
-    text?: string;
-    segments?: Array<{ start?: number; end?: number; text?: string }>;
-  };
-  clientTranscript: {
-    text?: string;
-    segments?: Array<{ start?: number; end?: number; text?: string }>;
-  };
-}) {
-  return [
-    "Analyze this sales call and return strict JSON only.",
-    `Call title: ${args.title}`,
-    `Call description: ${args.description ?? "N/A"}`,
-    `Seller transcript:\n${args.sellerTranscript.text ?? ""}`,
-    `Client transcript:\n${args.clientTranscript.text ?? ""}`,
-    `Seller segments:\n${JSON.stringify(args.sellerTranscript.segments ?? [])}`,
-    `Client segments:\n${JSON.stringify(args.clientTranscript.segments ?? [])}`,
-    "Return an aiSummary string, numeric scores from 0 to 100 for quickness, introduction, knowledge, hospitality, callToAction, overallRating, and transcriptEntries.",
-    "Each transcript entry must include channel ('seller' or 'client'), text, startTimestampMs, optional endTimestampMs, rating from 0 to 100, and isObjection boolean.",
-  ].join("\n\n");
+  console.log("Transcription created", transcriptionId);
+  return transcriptionId;
 }
 
 export const processCallAnalysis = internalAction({
@@ -93,7 +46,7 @@ export const processCallAnalysis = internalAction({
         pendingAnalysisId: args.pendingAnalysisId,
         status: "processing",
         progress: 10,
-        currentStep: "Loading call audio",
+        currentStep: "Loading call session",
       });
 
       const call = await ctx.runQuery(internal.calls.getCallForProcessing, {
@@ -109,30 +62,99 @@ export const processCallAnalysis = internalAction({
       await ctx.runMutation(internal.calls.updatePendingAnalysis, {
         pendingAnalysisId: args.pendingAnalysisId,
         progress: 25,
-        currentStep: "Transcribing seller audio",
+        currentStep: "Sending sales representative session",
       });
 
-      const sellerTranscript = await transcribeAudio(
+      await transcribeAudio(
         call.sellerAudioUrl,
-        "seller.mp3",
+        `${args.ownerUserId}:${args.teamId}:${args.callId}:seller`,
       );
 
       await ctx.runMutation(internal.calls.updatePendingAnalysis, {
         pendingAnalysisId: args.pendingAnalysisId,
-        progress: 50,
-        currentStep: "Transcribing client audio",
+        progress: 40,
+        currentStep: "Sending client session",
       });
 
-      const clientTranscript = await transcribeAudio(
+      await transcribeAudio(
         call.clientAudioUrl,
-        "client.mp3",
+        `${args.ownerUserId}:${args.teamId}:${args.callId}:client`,
       );
-
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unknown analysis error";
       await ctx.runMutation(internal.calls.updatePendingAnalysis, {
         pendingAnalysisId: args.pendingAnalysisId,
-        progress: 75,
-        currentStep: "Generating AI analysis",
+        status: "failed",
+        progress: 100,
+        currentStep: "Analysis failed",
+        errorMessage: message,
       });
+    }
+  },
+});
+
+function buildPrompt(args: {
+  title: string;
+  description?: string;
+  sellerTranscript: TranscriptionStatement[];
+  clientTranscript: TranscriptionStatement[];
+}) {
+  const formatSegments = (transcript: TranscriptionStatement[]) =>
+    transcript.map((s) => ({
+      text: s.text,
+      start_ms: s.start_ms,
+      end_ms: s.end_ms,
+    }));
+
+  const getFullText = (transcript: TranscriptionStatement[]) =>
+    transcript.map((s) => s.text).join(" ");
+
+  return [
+    "Analyze this sales call and return strict JSON only.",
+    `Call title: ${args.title}`,
+    `Call description: ${args.description ?? "N/A"}`,
+    `Seller transcript:\n${getFullText(args.sellerTranscript)}`,
+    `Client transcript:\n${getFullText(args.clientTranscript)}`,
+    `Seller sentences:\n${JSON.stringify(formatSegments(args.sellerTranscript))}`,
+    `Client sentences:\n${JSON.stringify(formatSegments(args.clientTranscript))}`,
+    "Return an aiSummary string, numeric scores from 0 to 100 for quickness, introduction, knowledge, hospitality, callToAction, overallRating, and transcriptEntries.",
+    "Each transcript entry must include channel ('seller' or 'client'), text, startTimestampMs, optional endTimestampMs, rating from 0 to 100, and isObjection boolean.",
+  ].join("\n\n");
+}
+
+export const runAiAnalysis = internalAction({
+  args: {
+    callId: v.id("calls"),
+    pendingAnalysisId: v.id("pending_analysis"),
+    teamId: v.id("teams"),
+    ownerUserId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    try {
+      const call = await ctx.runQuery(internal.calls.getCallForProcessing, {
+        callId: args.callId,
+        teamId: args.teamId,
+        ownerUserId: args.ownerUserId,
+      });
+
+      const pendingAnalysis = await ctx.runQuery(
+        internal.calls.getPendingAnalysisTranscripts,
+        {
+          pendingAnalysisId: args.pendingAnalysisId,
+        },
+      );
+
+      if (
+        !pendingAnalysis ||
+        !pendingAnalysis.sellerTranscriptRaw ||
+        !pendingAnalysis.clientTranscriptRaw
+      ) {
+        throw new Error("Missing transcripts in pending analysis record.");
+      }
+
+      const sellerTranscript = pendingAnalysis.sellerTranscriptRaw;
+      const clientTranscript = pendingAnalysis.clientTranscriptRaw;
 
       const analysisResponse = await fetch(
         "https://api.openai.com/v1/chat/completions",

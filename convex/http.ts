@@ -7,6 +7,8 @@ import {
   outboundTwiml,
 } from "./telephony";
 
+import { sonioxWebhook } from "./sonioxWebhook";
+
 const http = httpRouter();
 
 http.route({
@@ -31,6 +33,12 @@ http.route({
   path: "/twilio/outbound/recording",
   method: "POST",
   handler: outboundRecording,
+});
+
+http.route({
+  path: "/soniox/notify",
+  method: "POST",
+  handler: sonioxWebhook,
 });
 
 export default http;
