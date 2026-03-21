@@ -11,35 +11,39 @@ type TranscriptPanelProps = {
 
 export function TranscriptPanel({ transcriptEntries }: TranscriptPanelProps) {
   return (
-    <section className="min-h-[20rem] max-h-[54rem] self-start overflow-hidden rounded-[2rem] border border-white/10 bg-card/80 p-7 shadow-[0_20px_60px_rgba(0,0,0,0.18)]">
-      <div className="flex items-center justify-between gap-4">
+    <section className="flex flex-col h-[54rem] self-start overflow-hidden rounded-[2rem] border border-white/10 bg-card/80 p-7 shadow-[0_20px_60px_rgba(0,0,0,0.18)]">
+      {/* Header - Fixed at top, won't shrink */}
+      <div className="flex items-center justify-between gap-4 shrink-0">
         <div>
           <p className="text-base font-semibold tracking-tight">Transcript</p>
           <p className="mt-2 text-sm text-muted-foreground">
             Every scored transcript snippet, ordered chronologically.
           </p>
         </div>
-        <Badge variant="outline">{transcriptEntries.length} entries</Badge>
+        <Badge variant="outline" className="tabular-nums">
+          {transcriptEntries.length} entries
+        </Badge>
       </div>
 
       {transcriptEntries.length === 0 ? (
-        <ScrollArea className="mt-6 pr-4">
-          <div className="flex items-start justify-center self-start rounded-[1.6rem] border border-dashed border-white/10 bg-background/30 px-6 py-10 text-center">
-            <div className="max-w-md self-start">
-              <p className="text-base font-medium tracking-tight">
-                No transcript entries available
-              </p>
-              <p className="mt-3 text-base text-muted-foreground">
-                Analysis finished, but no transcript lines were saved for this
-                call. Try rerunning analysis if you expected the conversation to
-                appear here.
-              </p>
-            </div>
+        <div className="mt-6 flex-1 flex flex-col items-center justify-center rounded-[1.6rem] border border-dashed border-white/10 bg-background/30 px-6 py-10 text-center">
+          <div className="max-w-md">
+            <p className="text-base font-medium tracking-tight">
+              No transcript entries available
+            </p>
+            <p className="mt-3 text-base text-muted-foreground">
+              Analysis finished, but no transcript lines were saved for this
+              call. Try rerunning analysis if you expected the conversation to
+              appear here.
+            </p>
           </div>
-        </ScrollArea>
+        </div>
       ) : (
-        <ScrollArea className="mt-6 max-h-[calc(54rem-8rem)] pr-4">
-          <div className="space-y-4">
+        /* The ScrollArea uses 'flex-1' to take up all remaining height.
+           'min-h-0' is required for the internal viewport to respect the parent height.
+        */
+        <ScrollArea className="mt-6 flex-1 min-h-0 pr-4">
+          <div className="space-y-4 pb-4">
             {transcriptEntries.map((entry, index) => (
               <article
                 key={`${entry.channel}-${entry.startTimestampMs}-${index}`}
@@ -53,6 +57,7 @@ export function TranscriptPanel({ transcriptEntries }: TranscriptPanelProps) {
                 )}
               >
                 <div className="flex items-start gap-4">
+                  {/* Avatar / Initials */}
                   <div
                     className={cn(
                       "flex size-12 shrink-0 items-center justify-center rounded-full text-sm font-semibold",
@@ -63,21 +68,26 @@ export function TranscriptPanel({ transcriptEntries }: TranscriptPanelProps) {
                   >
                     {getSpeakerInitials(entry.channel)}
                   </div>
+
+                  {/* Content Area */}
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-3">
                       <p className="text-base font-medium tracking-tight">
                         {getSpeakerLabel(entry.channel)}
                       </p>
-                      {entry.isObjection ? (
+
+                      {entry.isObjection && (
                         <Badge className="border-amber-500/40 bg-amber-500/12 text-amber-300">
                           Objection
                         </Badge>
-                      ) : null}
-                      <span className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                      )}
+
+                      <span className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground tabular-nums">
                         {formatTimestamp(entry.startTimestampMs)}
                       </span>
                     </div>
-                    <p className="mt-3 text-base text-foreground/95">
+
+                    <p className="mt-3 text-base leading-relaxed text-foreground/95">
                       {entry.text}
                     </p>
                   </div>

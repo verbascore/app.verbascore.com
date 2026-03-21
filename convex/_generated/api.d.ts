@@ -18,7 +18,11 @@ import type * as http from "../http.js";
 import type * as lib_performance from "../lib/performance.js";
 import type * as lib_teamAccess from "../lib/teamAccess.js";
 import type * as lib_telephony from "../lib/telephony.js";
+import type * as lib_transcriber_constants from "../lib/transcriber/constants.js";
+import type * as lib_transcriber_transcriber from "../lib/transcriber/transcriber.js";
+import type * as lib_transcriber_types from "../lib/transcriber/types.js";
 import type * as notifications from "../notifications.js";
+import type * as sonioxWebhook from "../sonioxWebhook.js";
 import type * as teams from "../teams.js";
 import type * as telephony from "../telephony.js";
 
@@ -39,7 +43,11 @@ declare const fullApi: ApiFromModules<{
   "lib/performance": typeof lib_performance;
   "lib/teamAccess": typeof lib_teamAccess;
   "lib/telephony": typeof lib_telephony;
+  "lib/transcriber/constants": typeof lib_transcriber_constants;
+  "lib/transcriber/transcriber": typeof lib_transcriber_transcriber;
+  "lib/transcriber/types": typeof lib_transcriber_types;
   notifications: typeof notifications;
+  sonioxWebhook: typeof sonioxWebhook;
   teams: typeof teams;
   telephony: typeof telephony;
 }>;
